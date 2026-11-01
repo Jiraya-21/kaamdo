@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Rent agricultural equipment, tractors, rotavators, and harvesters from trusted owners in Karnataka on KaamDo">
+  <title data-i18n="title.equipment">Equipment for rent - KaamDo</title>
+  
+  <link rel="stylesheet" href="../../assets/css/main.css?v=lang1">
+  <link rel="stylesheet" href="../../assets/css/components.css?v=nav3">
+  <link rel="stylesheet" href="../../assets/css/responsive.css?v=lang1">
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <main id="app-content">
+    <div class="container" style="max-width: 960px; margin-top: 24px;">
+      
+      <div style="margin-bottom: 20px;">
+        <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--dark-text);" data-i18n="page.equipment.title">
+          Equipment for rent
+        </h1>
+        <p class="text-muted" style="font-size: 0.95rem;">
+          <span data-i18n="page.equipment.body">Published listings. Asking about dates does not reserve the machine and does not take money.</span>
+          <span data-i18n="page.equipment.link">Date requests start from a listing.</span>
+        </p>
+      </div>
+
+      <div class="search-bar-composite" style="margin-bottom: 16px;">
+        <input
+          type="text"
+          id="equip-search-input"
+          class="search-input-field"
+          data-i18n-placeholder="list.search"
+          data-i18n-aria="list.search"
+          placeholder="Search title, description, or place"
+        >
+        <select
+          id="equip-district-input"
+          class="search-input-field"
+          data-i18n-aria="list.district"
+          aria-label="District"
+        ></select>
+      </div>
+
+      <div class="filter-chips-container">
+        <button type="button" class="filter-chip equip-price-chip active" data-pricing-basis="" data-i18n="list.anyPrice">Any price</button>
+        <button type="button" class="filter-chip equip-price-chip" data-pricing-basis="hourly" data-i18n="list.hourly">Hourly</button>
+        <button type="button" class="filter-chip equip-price-chip" data-pricing-basis="daily" data-i18n="list.daily">Daily</button>
+      </div>
+      <div class="filter-chips-container">
+        <button type="button" class="filter-chip equip-operator-chip active" data-operator="" data-i18n="list.anyOperator">Any operator</button>
+        <button type="button" class="filter-chip equip-operator-chip" data-operator="true" data-i18n="list.operatorYes">Operator included</button>
+        <button type="button" class="filter-chip equip-operator-chip" data-operator="false" data-i18n="list.operatorNo">Operator not included</button>
+      </div>
+      <p id="equipment-results-count" class="text-muted" style="margin-top: 12px;"></p>
+
+      <!-- Equipment List Container -->
+      <div id="equipment-list-container" style="margin-top: 20px;">
+        <!-- Injected by equipmentList.js -->
+      </div>
+
+    </div>
+  </main>
+
+  <script src="../../assets/js/config.js?v=cfg1"></script>
+  <script src="../../assets/js/utils/storage.js"></script>
+  <script src="../../assets/js/utils/dom.js"></script>
+  <script src="../../assets/js/api/apiClient.js"></script>
+  <script src="../../assets/js/pages/locationFields.js?v=loc1"></script>
+  <script src="../../assets/js/i18n/messages.js?v=lang5"></script>
+  <script src="../../assets/js/i18n/i18n.js?v=lang1"></script>
+  <script src="../../assets/js/components/navbar.js?v=nav3"></script>
+  <script src="../../assets/js/pages/equipmentListLogic.js"></script>
+  <script src="../../assets/js/pages/equipmentList.js"></script>
+</body>
+</html>

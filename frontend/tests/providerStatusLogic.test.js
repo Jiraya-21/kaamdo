@@ -1,0 +1,30 @@
+const assert = require('node:assert/strict');
+const logic = require('../assets/js/pages/providerStatusLogic.js');
+
+assert.equal(logic.PROFILE_PATH, '/workers/profile/');
+assert.equal(logic.PHOTO_PATH, '/workers/profile/photo/');
+assert.equal(logic.isProvider({ capabilities: ['customer'] }), false);
+assert.equal(logic.isProvider({ capabilities: ['service_provider'] }), true);
+assert.equal(logic.isProvider(null), false);
+assert.equal(logic.initials('Basavaraj Patil'), 'BP');
+assert.equal(logic.initials('Asha'), 'A');
+assert.equal(logic.initials(''), '');
+assert.equal(logic.hasUploadedPhoto('https://example.com/media/a.jpg'), true);
+assert.equal(logic.hasUploadedPhoto('/media/a.jpg'), false);
+assert.equal(logic.hasUploadedPhoto('javascript:alert(1)'), false);
+assert.equal(logic.photoSrc('https://api.example/media/a.jpg'), 'https://api.example/media/a.jpg');
+assert.equal(logic.photoSrc(''), logic.DEFAULT_AVATAR);
+assert.equal(logic.fileError(null).length > 0, true);
+assert.equal(logic.fileError({ size: 10, type: 'image/jpeg', name: 'a.jpg' }), '');
+assert.match(logic.fileError({ size: logic.MAX_BYTES + 1, type: 'image/jpeg', name: 'a.jpg' }), /2 MB/);
+assert.match(logic.fileError({ size: 10, type: 'image/svg+xml', name: 'a.svg' }), /JPEG/);
+assert.equal(logic.availabilityValue({ availability: 'unavailable' }), 'unavailable');
+assert.equal(logic.availabilityValue({ availability: 'available' }), 'available');
+assert.equal(logic.availabilityValue({}), '');
+assert.equal(logic.nextAvailability('available'), 'unavailable');
+assert.equal(logic.nextTab('profile', 'ArrowRight'), 'requests');
+assert.equal(logic.nextTab('offers', 'ArrowRight'), 'profile');
+assert.equal(logic.nextTab('requests', 'ArrowLeft'), 'profile');
+assert.equal(logic.nextTab('profile', 'End'), 'offers');
+
+console.log('provider status logic tests passed');

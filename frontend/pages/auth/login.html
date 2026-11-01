@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title.login">Login - KaamDo</title>
+  
+  <link rel="stylesheet" href="../../assets/css/main.css?v=lang1">
+  <link rel="stylesheet" href="../../assets/css/components.css?v=nav3">
+  <link rel="stylesheet" href="../../assets/css/responsive.css?v=lang1">
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <main id="app-content">
+    <div class="container" style="max-width: 440px; margin-top: 40px;">
+      
+      <div class="card" style="padding: 32px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h1 style="font-size: 1.6rem; font-weight: 800; color: var(--dark-text);" data-i18n="login.title">Welcome Back</h1>
+          <p class="text-muted" style="font-size: 0.875rem;" data-i18n="login.lead">Log in with the mobile number on your account. This page does not take money.</p>
+        </div>
+
+        <form id="login-form">
+          <div class="form-group">
+            <label class="form-label" for="login-phone" data-i18n="login.phone">Registered Mobile Number</label>
+            <div style="display:flex; gap:8px;">
+              <span style="display:flex; align-items:center; background:#F1F5F9; border:1px solid #E2E8F0; border-radius:8px; padding:0 12px; font-weight:600;">+91</span>
+              <input type="tel" id="login-phone" class="form-input" data-i18n-placeholder="login.phoneHint" placeholder="10-digit mobile number" maxlength="10" inputmode="numeric" autocomplete="tel" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="login-password" data-i18n="login.password">Password</label>
+            <input type="password" id="login-password" class="form-input" placeholder="••••••••" autocomplete="current-password" required>
+          </div>
+
+          <p id="login-error" role="alert" style="display:none; color:#b91c1c; font-size:0.875rem; margin-top:12px;"></p>
+          <button type="submit" class="btn btn-primary btn-block" style="margin-top: 18px; padding: 12px;" data-i18n="login.submit">Log In</button>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 0.875rem; color: var(--neutral-gray);">
+          <span data-i18n="login.new">New to KaamDo?</span> <a href="register.html" data-i18n="login.create">Create an Account</a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="../../assets/js/config.js?v=cfg1"></script>
+  <script src="../../assets/js/utils/storage.js"></script>
+  <script src="../../assets/js/api/apiClient.js"></script>
+  <script src="../../assets/js/api/authApi.js"></script>
+  <script src="../../assets/js/account/session.js"></script>
+  <script src="../../assets/js/pages/authFormLogic.js?v=auth1"></script>
+  <script src="../../assets/js/i18n/messages.js?v=lang5"></script>
+  <script src="../../assets/js/i18n/i18n.js?v=lang1"></script>
+  <script src="../../assets/js/components/navbar.js?v=nav3"></script>
+  <script src="../../assets/js/pages/login.js?v=auth1"></script>
+</body>
+</html>

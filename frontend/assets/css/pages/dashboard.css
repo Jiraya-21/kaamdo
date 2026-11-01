@@ -1,0 +1,396 @@
+/**
+ * KaamDo - Dashboard Styles
+ * Today's Wallet, End-of-Day Payout, Guest Booking Requests, and Reliability Dashboard.
+ */
+
+.dashboard-nav-tabs {
+  display: flex;
+  gap: var(--spacing-xs);
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: var(--spacing-lg);
+  overflow-x: auto;
+}
+
+.dashboard-tab {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-weight: 600;
+  color: var(--neutral-gray);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.dashboard-tab:hover {
+  color: var(--primary-green);
+}
+
+.dashboard-tab.active {
+  color: var(--primary-green);
+  border-bottom-color: var(--primary-green);
+}
+
+.account-shell {
+  max-width: 960px;
+  margin-top: 24px;
+}
+
+.account-header,
+.account-identity {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.account-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--light-gray);
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.account-initials {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--primary-green);
+}
+
+.provider-status {
+  margin-bottom: 24px;
+}
+
+.account-header h1 {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--dark-text);
+}
+
+.account-status:empty {
+  display: none;
+}
+
+.account-status {
+  color: #b91c1c;
+  margin-bottom: 16px;
+}
+
+.test-mode-banner {
+  background: var(--warning-yellow);
+  color: var(--dark-text);
+  font-weight: 700;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+
+.test-mode-banner:empty,
+.test-mode-banner[hidden] {
+  display: none;
+}
+
+.account-group {
+  margin-bottom: 28px;
+}
+
+.account-group h2 {
+  font-size: 1.15rem;
+  margin-bottom: 8px;
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.account-card {
+  display: block;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--surface-white);
+  color: inherit;
+  text-decoration: none;
+}
+
+.account-card h2,
+.account-card h3 {
+  font-size: 1.05rem;
+  margin-bottom: 8px;
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.role-list,
+.workspace-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.role-card,
+.workspace-panel,
+.availability-card {
+  display: block;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  background: var(--surface-white);
+}
+
+.role-card h3,
+.availability-card h2,
+.availability-card h3 {
+  font-size: 1.15rem;
+  margin-bottom: 8px;
+}
+
+.role-card .btn,
+.availability-switch {
+  margin-top: 12px;
+  min-height: 48px;
+}
+
+.availability-switch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.availability-switch input {
+  width: 20px;
+  height: 20px;
+}
+
+.availability-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--neutral-gray);
+  flex-shrink: 0;
+}
+
+.availability-card.is-available .availability-dot {
+  background: var(--success-green);
+}
+
+.availability-card.is-unavailable .availability-dot {
+  background: var(--danger-red);
+}
+
+.availability-card.is-available {
+  border-color: var(--primary-green);
+}
+
+.photo-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin: 12px 0 20px;
+}
+
+.photo-preview {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--border-color);
+  background: var(--light-gray);
+}
+
+.photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workspace-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px 0 12px;
+}
+
+.workspace-tab {
+  min-height: 48px;
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  background: var(--surface-white);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.workspace-tab.is-active,
+.workspace-tab[aria-selected="true"] {
+  background: var(--light-green);
+  border-color: var(--primary-green);
+  color: var(--primary-green);
+}
+
+.workspace-tab-panel {
+  margin-top: 8px;
+}
+
+.profile-view h4 {
+  font-size: 1.15rem;
+  margin-bottom: 8px;
+}
+
+.choice-row {
+  display: block;
+  min-height: 44px;
+  padding: 6px 0;
+}
+
+.action-gap {
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+.workspace-nav {
+  margin-bottom: 12px;
+}
+
+.workspace-back {
+  font-weight: 600;
+}
+
+.workspace-lead {
+  margin-bottom: 16px;
+}
+
+.account-details {
+  background: var(--surface-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+}
+
+.account-details summary {
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.account-details .text-muted {
+  margin: 8px 0 12px;
+}
+
+.notify-row {
+  border-top: 1px solid var(--border-color);
+  padding: 12px 0;
+}
+
+.notify-row h3 {
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.otp-code {
+  font-size: 1.5rem;
+  letter-spacing: 0.35em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 767px) {
+  .account-actions .btn,
+  .account-header .btn,
+  .account-card .btn,
+  .role-card .btn,
+  .workspace-panel .btn,
+  .availability-switch,
+  .workspace-tab,
+  .photo-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Incoming Request Card */
+.booking-request-card {
+  background: var(--surface-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.request-info-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.request-title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--dark-text);
+}
+
+.request-meta {
+  font-size: var(--font-size-sm);
+  color: var(--neutral-gray);
+}
+
+.escrow-secured-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--light-green);
+  color: var(--primary-green);
+  font-weight: 600;
+  font-size: var(--font-size-xs);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+/* Payout Notice */
+.payout-notice-card {
+  background-color: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-top: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: #1E40AF;
+}

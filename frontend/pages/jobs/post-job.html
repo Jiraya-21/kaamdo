@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title.postJob">Post a job or list equipment - KaamDo</title>
+  <link rel="stylesheet" href="../../assets/css/main.css?v=lang2">
+  <link rel="stylesheet" href="../../assets/css/components.css?v=nav3">
+  <link rel="stylesheet" href="../../assets/css/responsive.css?v=lang2">
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <main id="app-content">
+    <div class="container" style="max-width: 720px; margin-top: 30px;">
+      <div class="form-tab-row" style="display:flex; justify-content:center; gap:16px; margin-bottom:24px;">
+        <button id="tab-post-job" type="button" class="btn btn-primary" style="flex:1;" data-i18n="form.postJob">Post a job</button>
+        <button id="tab-list-equip" type="button" class="btn btn-outline" style="flex:1;" data-i18n="form.listEquip">List equipment</button>
+      </div>
+
+      <div id="form-post-job" class="card" style="padding:28px;">
+        <h2 style="font-size:1.5rem; font-weight:700; margin-bottom:8px;" data-i18n="form.jobHeading">Post an ordinary job</h2>
+        <p class="text-muted" style="margin-bottom:18px;">
+          <span data-i18n="form.jobLead">A first job waits for staff review. Farm hiring is a separate request.</span>
+          <a href="../auth/login.html" data-i18n="form.signIn">Sign in</a>
+        </p>
+        <form id="job-create-form">
+          <div class="form-group">
+            <label class="form-label" for="job-title" data-i18n="form.jobTitle">Job title</label>
+            <input type="text" id="job-title" class="form-input" maxlength="120" required>
+          </div>
+          <div class="form-two-col">
+            <div class="form-group">
+              <label class="form-label" for="job-work-type" data-i18n="form.workType">Work type</label>
+              <select id="job-work-type" class="form-select">
+                <option value="temporary" data-i18n="list.temporary">Temporary</option>
+                <option value="part_time" data-i18n="list.partTime">Part time</option>
+                <option value="full_time" data-i18n="list.fullTime">Full time</option>
+                <option value="contract" data-i18n="list.contract">Contract</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="job-headcount" data-i18n="form.vacancies">Vacancies</label>
+              <input type="number" id="job-headcount" class="form-input" min="1" max="100" value="1" required>
+            </div>
+          </div>
+          <div class="form-two-col">
+            <div class="form-group">
+              <label class="form-label" for="job-district" data-i18n="form.district">District</label>
+              <select id="job-district" class="form-select" required></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="job-taluk" data-i18n="form.taluk">Taluk</label>
+              <select id="job-taluk" class="form-select" required></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="job-locality" data-i18n="form.locality">Locality</label>
+              <input type="text" id="job-locality" class="form-input" maxlength="120" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="job-description" data-i18n="form.description">Description</label>
+            <textarea id="job-description" class="form-textarea" rows="4" maxlength="2000" required></textarea>
+          </div>
+          <div class="form-two-col">
+            <div class="form-group">
+              <label class="form-label" for="job-wage-amount" data-i18n="form.wageAmount">Wage amount (INR)</label>
+              <input type="number" id="job-wage-amount" class="form-input" min="0.01" step="0.01">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="job-wage-period" data-i18n="form.wagePeriod">Wage period</label>
+              <select id="job-wage-period" class="form-select">
+                <option value="hourly" data-i18n="list.hourly">Hourly</option>
+                <option value="daily" selected data-i18n="list.daily">Daily</option>
+                <option value="weekly" data-i18n="list.weekly">Weekly</option>
+                <option value="monthly" data-i18n="list.monthly">Monthly</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="job-wage-negotiable">
+              <input type="checkbox" id="job-wage-negotiable"> <span data-i18n="form.wageNegotiable">Wage is negotiable</span>
+            </label>
+          </div>
+          <p id="job-notice" role="status" style="min-height:1.25rem;"></p>
+          <button id="job-submit" type="submit" class="btn btn-primary btn-block" style="margin-top:16px; padding:12px;" data-i18n="form.submitJob">Submit job</button>
+        </form>
+      </div>
+
+      <div id="form-list-equip" class="card" style="padding:28px; display:none;">
+        <h2 style="font-size:1.5rem; font-weight:700; margin-bottom:8px;" data-i18n="form.equipHeading">List equipment</h2>
+        <p class="text-muted" style="margin-bottom:18px;">
+          <span data-i18n="form.equipLead">A new listing is saved as a private draft. There is no category or photo field.</span>
+          <a href="../auth/login.html" data-i18n="form.signIn">Sign in</a>
+        </p>
+        <form id="equipment-create-form">
+          <div class="form-group">
+            <label class="form-label" for="equip-title" data-i18n="form.equipName">Equipment name</label>
+            <input type="text" id="equip-title" class="form-input" maxlength="120" required>
+          </div>
+          <div class="form-two-col">
+            <div class="form-group">
+              <label class="form-label" for="equip-district" data-i18n="form.district">District</label>
+              <select id="equip-district" class="form-select" required></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="equip-taluk" data-i18n="form.taluk">Taluk</label>
+              <select id="equip-taluk" class="form-select" required></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="equip-locality" data-i18n="form.locality">Locality</label>
+              <input type="text" id="equip-locality" class="form-input" maxlength="120" required>
+            </div>
+          </div>
+          <div class="form-two-col">
+            <div class="form-group">
+              <label class="form-label" for="equip-pricing-basis" data-i18n="form.rateBasis">Rate basis</label>
+              <select id="equip-pricing-basis" class="form-select">
+                <option value="daily" data-i18n="list.daily">Daily</option>
+                <option value="hourly" data-i18n="list.hourly">Hourly</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="equip-rate" data-i18n="form.rate">Rate (INR)</label>
+              <input type="number" id="equip-rate" class="form-input" min="0.01" step="0.01" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="equip-operator">
+              <input type="checkbox" id="equip-operator"> <span data-i18n="form.operator">Operator included</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="equip-description" data-i18n="form.description">Description</label>
+            <textarea id="equip-description" class="form-textarea" rows="4" maxlength="2000" required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="equip-availability" data-i18n="form.availability">Availability note</label>
+            <input type="text" id="equip-availability" class="form-input" maxlength="200">
+          </div>
+          <p id="equipment-notice" role="status" style="min-height:1.25rem;"></p>
+          <button id="equipment-submit" type="submit" class="btn btn-primary btn-block" style="margin-top:16px; padding:12px;" data-i18n="form.saveListing">Save listing</button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="../../assets/js/config.js?v=cfg2"></script>
+  <script src="../../assets/js/utils/storage.js"></script>
+  <script src="../../assets/js/api/apiClient.js"></script>
+  <script src="../../assets/js/account/session.js"></script>
+  <script src="../../assets/js/pages/locationFields.js?v=loc1"></script>
+  <script src="../../assets/js/pages/postFormLogic.js?v=loc1"></script>
+  <script src="../../assets/js/i18n/messages.js?v=lang6"></script>
+  <script src="../../assets/js/i18n/i18n.js?v=lang1"></script>
+  <script src="../../assets/js/components/navbar.js?v=nav3"></script>
+  <script src="../../assets/js/pages/postJob.js"></script>
+</body>
+</html>

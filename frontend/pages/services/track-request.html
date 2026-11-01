@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title.track">Track a request - KaamDo</title>
+  <link rel="stylesheet" href="../../assets/css/main.css?v=lang1">
+  <link rel="stylesheet" href="../../assets/css/components.css?v=nav3">
+  <link rel="stylesheet" href="../../assets/css/responsive.css?v=lang1">
+  <link rel="stylesheet" href="../../assets/css/pages/guest-request.css?v=guest6">
+</head>
+<body>
+  <div id="navbar-container"></div>
+  <main id="app-content">
+    <div class="container guest-page">
+      <header class="guest-intro">
+        <h1 data-i18n="track.title">Track an existing request</h1>
+        <p data-i18n="track.lead">You need the request number and the tracking key shown when the request was saved. The tracking key is not a login password. Do not share it.</p>
+        <p class="guest-track-link">
+          <a href="guest-request.html" data-i18n="track.newRequest">Request a service</a>
+          <a id="track-my-requests" href="../services/customer.html" hidden data-i18n="guest.myRequests">My requests</a>
+        </p>
+      </header>
+
+      <section class="card guest-step track-panel" aria-labelledby="guest-status-heading">
+        <h2 id="guest-status-heading" data-i18n="track.formHeading">See how the work is going</h2>
+        <p class="guest-lead" data-i18n="track.formLead">Enter the two details shown after you saved. This does not assign a worker and does not take money.</p>
+        <ol class="track-need">
+          <li>
+            <strong data-i18n="track.needNumberTitle">Request number</strong>
+            <p data-i18n="track.needNumberBody">The short number KaamDo showed after you saved. It is not a password.</p>
+          </li>
+          <li>
+            <strong data-i18n="track.needKeyTitle">Tracking key</strong>
+            <p data-i18n="track.needKeyBody">A secret shown only once. Anyone who has both the number and this key can see this request. Do not share them.</p>
+          </li>
+        </ol>
+        <form id="guest-status-form" autocomplete="off">
+          <div class="guest-layout">
+            <div class="form-group">
+              <label class="form-label" for="status-reference" data-i18n="track.needNumberTitle">Request number</label>
+              <input id="status-reference" class="form-input" inputmode="numeric" autocomplete="off" required aria-describedby="status-reference-help">
+              <p id="status-reference-help" class="guest-lead" data-i18n="track.referenceHelp">Type the request number here.</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="status-access-key" data-i18n="track.needKeyTitle">Tracking key</label>
+              <input id="status-access-key" class="form-input" autocomplete="off" spellcheck="false" required aria-describedby="status-key-help">
+              <p id="status-key-help" class="guest-lead" data-i18n="track.keyHelp">Type the tracking key here. It is not stored in this page’s address.</p>
+            </div>
+          </div>
+          <div class="guest-actions">
+            <button id="status-submit" class="btn btn-primary" type="submit" data-i18n="track.submit">See status</button>
+          </div>
+        </form>
+        <p id="status-notice" class="form-notice" role="status"></p>
+        <div id="status-result" class="track-result" hidden></div>
+      </section>
+    </div>
+  </main>
+  <script src="../../assets/js/config.js?v=cfg1"></script>
+  <script src="../../assets/js/utils/storage.js"></script>
+  <script src="../../assets/js/api/apiClient.js"></script>
+  <script src="../../assets/js/pages/guestServiceLogic.js?v=match1"></script>
+  <script src="../../assets/js/i18n/messages.js?v=otp6"></script>
+  <script src="../../assets/js/i18n/i18n.js?v=lang1"></script>
+  <script src="../../assets/js/components/navbar.js?v=ux1"></script>
+  <script src="../../assets/js/pages/trackRequest.js?v=match1"></script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title.guest">Request a service - KaamDo</title>
+  <link rel="stylesheet" href="../../assets/css/main.css?v=lang1">
+  <link rel="stylesheet" href="../../assets/css/components.css?v=nav3">
+  <link rel="stylesheet" href="../../assets/css/responsive.css?v=lang1">
+  <link rel="stylesheet" href="../../assets/css/pages/guest-request.css?v=guest5">
+</head>
+<body>
+  <div id="navbar-container"></div>
+  <main id="app-content">
+    <div class="container guest-page">
+      <header class="guest-intro">
+        <h1 data-i18n="guest.title">Request a service</h1>
+        <p data-i18n="guest.intro">KaamDo helps match you with an eligible provider nearby. Saving this does not assign a worker and does not take money.</p>
+        <p class="guest-track-link">
+          <a href="track-request.html" data-i18n="guest.trackLink">Track an existing request</a>
+        </p>
+      </header>
+
+      <ol class="guest-progress" aria-label="Request progress">
+        <li data-guest-step="service" class="is-current"><span data-i18n="guest.stepService">1. Service</span></li>
+        <li data-guest-step="details"><span data-i18n="guest.stepDetails">2. Details</span></li>
+        <li data-guest-step="review"><span data-i18n="guest.stepReview">3. Review</span></li>
+      </ol>
+
+      <p id="guest-signed-in" class="form-notice is-info" hidden></p>
+
+      <section id="guest-service-section" class="card guest-step" aria-labelledby="guest-catalogue-heading">
+        <h2 id="guest-catalogue-heading" data-i18n="guest.catalogueHeading">Choose a service</h2>
+        <p class="guest-lead" data-i18n="guest.catalogueLead">Choose one service. This list is not a list of people.</p>
+        <div id="service-catalogue" class="service-catalogue"></div>
+        <p id="catalogue-notice" class="form-notice" role="status"></p>
+      </section>
+
+      <section id="guest-details-section" class="card guest-step" aria-labelledby="guest-details-heading" hidden aria-hidden="true">
+        <h2 id="guest-details-heading" data-i18n="guest.requestHeading">Describe the work</h2>
+        <p class="guest-lead" data-i18n="guest.requestLead">Say what needs doing and where. This page does not ask you to pick a person.</p>
+        <form id="guest-details-form" autocomplete="off">
+          <div class="form-group">
+            <label class="form-label" for="request-name" data-i18n="guest.name">Your name</label>
+            <input id="request-name" class="form-input" maxlength="120" autocomplete="name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="request-description" data-i18n="guest.description">What needs to be done</label>
+            <textarea id="request-description" class="form-textarea" rows="4" maxlength="1000" required></textarea>
+          </div>
+          <div class="guest-layout">
+            <div class="form-group">
+              <label class="form-label" for="request-state" data-i18n="form.state">State</label>
+              <input id="request-state" class="form-input" value="Karnataka" readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="request-district" data-i18n="form.district">District</label>
+              <select id="request-district" class="form-select" required></select>
+            </div>
+          </div>
+          <div class="guest-layout">
+            <div class="form-group">
+              <label class="form-label" for="request-taluk" data-i18n="form.taluk">Taluk</label>
+              <select id="request-taluk" class="form-select" required></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="request-place" data-i18n="form.locality">Locality</label>
+              <input id="request-place" class="form-input" maxlength="120" autocomplete="street-address">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="request-radius" data-i18n="guest.radius">How far to search (8 to 50 km)</label>
+            <input id="request-radius" class="form-input" type="number" min="8" max="50" value="15" required>
+          </div>
+          <p class="guest-lead" data-i18n="guest.placeHelp">Choose the official district and taluk, then type your locality. Nearby providers are found from this phone location, not from a map pin we invent.</p>
+          <div class="guest-actions">
+            <button id="guest-locate" class="btn btn-outline" type="button" data-i18n="guest.locate">Use this phone location</button>
+          </div>
+          <!-- <div class="form-group">
+            <label  class="form-label"  for="request-radius" data-i18n="guest.radius">How far to search (8 to 50 km)</label>
+            <input type="range" min="5" max="50" default="20" id="request-radius" required>
+          </div> 
+            -->
+
+
+
+          <p id="location-state" class="form-notice" role="status"></p>
+          <div id="guest-map-note"></div>
+          <input id="request-latitude" type="hidden" autocomplete="off">
+          <input id="request-longitude" type="hidden" autocomplete="off">
+          <select id="request-category" class="visually-hidden" tabindex="-1" aria-hidden="true">
+            <option value="" data-i18n="guest.chooseCategory">Choose a service</option>
+          </select>
+          <div class="guest-actions">
+            <button class="btn btn-outline" type="button" id="details-back" data-i18n="guest.back">Back</button>
+            <button class="btn btn-primary" type="submit" data-i18n="guest.next">Continue</button>
+          </div>
+        </form>
+        <p id="details-notice" class="form-notice" role="status"></p>
+      </section>
+
+      <section id="guest-review-section" class="card guest-step" aria-labelledby="guest-review-heading" hidden aria-hidden="true">
+        <h2 id="guest-review-heading" data-i18n="guest.reviewHeading">Review and send</h2>
+        <p class="guest-lead" data-i18n="guest.reviewLead">Check these details. Send only once.</p>
+        <dl id="review-summary" class="guest-review"></dl>
+
+        <div id="guest-verify-block">
+          <h3 id="guest-email-heading" data-i18n="guest.emailHeading">Check your contact</h3>
+          <p id="verify-mode-note" class="guest-lead"></p>
+          <p id="guest-verify-blocked" class="form-notice is-error" hidden></p>
+          <fieldset id="guest-methods" class="guest-methods" hidden>
+            <legend data-i18n="guest.methodLegend">How to check this request</legend>
+            <label id="method-phone-label" class="guest-method" hidden>
+              <input type="radio" name="verify-method" value="phone">
+              <span data-i18n="guest.methodPhone">Mobile code</span>
+            </label>
+            <label id="method-email-label" class="guest-method" hidden>
+              <input type="radio" name="verify-method" value="email">
+              <span data-i18n="guest.methodEmail">Email code</span>
+            </label>
+          </fieldset>
+          <form id="guest-send-form" autocomplete="off" hidden>
+            <div id="guest-phone-fields" class="form-group" hidden>
+              <label class="form-label" for="guest-phone" data-i18n="login.phone">Mobile number</label>
+              <input id="guest-phone" class="form-input" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel">
+            </div>
+            <div id="guest-email-fields" class="form-group" hidden>
+              <label class="form-label" for="guest-email" data-i18n="guest.email">Email</label>
+              <input id="guest-email" class="form-input" type="email" autocomplete="email">
+            </div>
+            <div class="guest-actions">
+              <button id="guest-send-code" class="btn btn-outline" type="submit" data-i18n="guest.sendCode">Send practice code</button>
+            </div>
+          </form>
+          <form id="guest-verify-form" autocomplete="off" hidden>
+            <div class="form-group">
+              <label class="form-label" for="guest-code" data-i18n="guest.code">6-digit code</label>
+              <input id="guest-code" class="form-input otp-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+            </div>
+            <div class="guest-actions">
+              <button class="btn btn-outline" type="submit" data-i18n="guest.verify">Check code</button>
+            </div>
+          </form>
+          <p id="verify-dev-note" class="form-notice is-info" hidden></p>
+          <p id="verify-notice" class="form-notice" role="status"></p>
+        </div>
+
+        <form id="guest-request-form" autocomplete="off">
+          <div class="form-group" id="request-email-wrap" hidden>
+            <label class="form-label" for="request-email" data-i18n="guest.verifiedEmail">Checked email</label>
+            <input id="request-email" class="form-input" type="email" autocomplete="email" readonly>
+          </div>
+          <div class="form-group" id="request-phone-wrap" hidden>
+            <label class="form-label" for="request-phone" data-i18n="guest.verifiedPhone">Checked mobile number</label>
+            <input id="request-phone" class="form-input" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel" readonly>
+          </div>
+          <div class="guest-actions">
+            <button class="btn btn-outline" type="button" id="review-back" data-i18n="guest.back">Back</button>
+            <button id="request-submit" class="btn btn-primary" type="submit" data-i18n="guest.save">Send request</button>
+          </div>
+        </form>
+        <p id="request-notice" class="form-notice" role="status"></p>
+        <div id="request-confirmation" class="guest-confirm" hidden>
+          <h3 data-i18n="guest.confirmTitle">Request saved</h3>
+          <p id="confirm-summary"></p>
+          <p><span data-i18n="guest.referenceLabel">Reference</span> <strong id="confirm-reference"></strong></p>
+          <p><span data-i18n="guest.statusLabel">Status</span> <strong id="confirm-status"></strong></p>
+          <p id="confirm-key-copy" data-i18n="guest.saveKey">Save this private tracking key. You need it to check the request later. This page will not show it again after you leave.</p>
+          <p id="confirm-access-key" class="guest-key"></p>
+          <div class="guest-actions">
+            <button id="copy-reference" class="btn btn-outline" type="button" data-i18n="guest.copyReference">Copy reference</button>
+            <button id="copy-access-key" class="btn btn-outline" type="button" data-i18n="guest.copyKey">Copy private key</button>
+            <a id="confirm-track-link" class="btn btn-primary" href="track-request.html" data-i18n="guest.trackNow">Track this request</a>
+          </div>
+          <p id="confirm-notice" class="form-notice" role="status"></p>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script src="../../assets/js/config.js?v=cfg2"></script>
+  <script src="../../assets/js/utils/storage.js"></script>
+  <script src="../../assets/js/utils/geolocation.js?v=coord1"></script>
+  <script src="../../assets/js/utils/maps.js?v=map1"></script>
+  <script src="../../assets/js/api/apiClient.js"></script>
+  <script src="../../assets/js/pages/locationFields.js?v=loc1"></script>
+  <script src="../../assets/js/pages/guestServiceLogic.js?v=match2"></script>
+  <script src="../../assets/js/components/otpUi.js"></script>
+  <script src="../../assets/js/i18n/messages.js?v=otp6"></script>
+  <script src="../../assets/js/i18n/i18n.js?v=lang1"></script>
+  <script src="../../assets/js/components/navbar.js?v=ux1"></script>
+  <script src="../../assets/js/pages/guestService.js?v=coord1"></script>
+</body>
+</html>

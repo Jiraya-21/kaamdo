@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="KaamDo - Local Work, Services, and Agricultural Equipment Marketplace in Karnataka">
+  <title data-i18n="title.home">KaamDo - Find work. Hire help. Rent equipment.</title>
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="assets/css/main.css?v=ux1">
+  <link rel="stylesheet" href="assets/css/components.css?v=ux1">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=ux1">
+  <link rel="stylesheet" href="assets/css/pages/home.css?v=ux1">
+</head>
+<body>
+  <!-- Header / Navigation -->
+  <div id="navbar-container"></div>
+
+  <main id="app-content">
+    <div class="container">
+      
+      <!-- HERO SECTION -->
+      <section class="hero-banner-wrapper">
+        <img 
+          src="assets/images/placeholders/hero-bg.svg" 
+          alt="" 
+          class="hero-bg-image"
+        >
+        <div class="hero-banner-content">
+          <h1 class="hero-title" data-i18n="home.title">Find work. Hire help. Rent equipment.</h1>
+          <p class="hero-subtitle" data-i18n="home.subtitle">KaamDo connects people who need work, people who hire, and people who rent equipment in Karnataka.</p>
+          
+          <div class="hero-cta-group">
+            <a href="pages/services/guest-request.html" class="btn btn-primary" data-i18n="nav.daily">Daily services</a>
+            <a href="pages/jobs/jobs-list.html" class="btn btn-secondary" data-i18n="nav.jobs">Jobs</a>
+            <a href="pages/equipment/equipment-list.html" class="btn btn-warning" data-i18n="nav.equipment">Equipment</a>
+            <a href="pages/jobs/farm-jobs.html" class="btn btn-outline" data-i18n="nav.farm">Farm hiring</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEARCH BAR -->
+      <section style="margin: -10px auto 40px; max-width: 860px;">
+        <form id="home-search-form" class="search-bar-composite">
+          <input 
+            type="text" 
+            id="home-search-query" 
+            class="search-input-field" 
+            data-i18n-placeholder="home.searchPlaceholder"
+            placeholder="Type a service, such as electrician or plumber"
+          >
+          <button type="submit" class="btn btn-primary" data-i18n="home.search">Search</button>
+        </form>
+      </section>
+
+      <!-- THREE MAIN ENTRY CARDS -->
+      <section class="entry-cards-grid">
+        <div class="entry-card">
+          <div class="entry-card-icon green" aria-hidden="true"></div>
+          <h2 class="entry-card-title" data-i18n="nav.daily">Daily services</h2>
+          <p class="entry-card-desc" data-i18n="home.services.body">Choose the service you need. KaamDo asks a suitable worker. A worker is not chosen until one accepts.</p>
+          <a href="pages/services/guest-request.html" class="btn btn-primary btn-block" data-i18n="home.requestService">Ask for a service</a>
+        </div>
+        <div class="entry-card">
+          <div class="entry-card-icon blue" aria-hidden="true"></div>
+          <h2 class="entry-card-title" data-i18n="nav.jobs">Jobs</h2>
+          <p class="entry-card-desc" data-i18n="page.jobs.body">Published jobs. The filters apply to the full list.</p>
+          <a href="pages/jobs/jobs-list.html" class="btn btn-primary btn-block" data-i18n="home.browseJobs">See jobs</a>
+        </div>
+        <div class="entry-card">
+          <div class="entry-card-icon orange" aria-hidden="true"></div>
+          <h2 class="entry-card-title" data-i18n="nav.equipment">Equipment</h2>
+          <p class="entry-card-desc" data-i18n="page.equipment.body">Published listings. Asking about dates does not reserve the machine and does not take money.</p>
+          <a href="pages/equipment/equipment-list.html" class="btn btn-warning btn-block" data-i18n="home.rentEquipment">Rent equipment</a>
+        </div>
+        <div class="entry-card">
+          <div class="entry-card-icon green" aria-hidden="true"></div>
+          <h2 class="entry-card-title" data-i18n="nav.farm">Farm hiring</h2>
+          <p class="entry-card-desc" data-i18n="page.farm.body">Published farm posts. They are not mixed into ordinary jobs.</p>
+          <a href="pages/jobs/farm-jobs.html" class="btn btn-secondary btn-block" data-i18n="page.farm.title">Farm jobs</a>
+        </div>
+      </section>
+
+      <section style="margin-bottom: 48px;">
+        <div class="services-section-header">
+          <div>
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--dark-text);" data-i18n="home.services.title">
+              Daily services
+            </h2>
+            <p class="text-muted" style="font-size: 0.875rem;" data-i18n="home.services.body">
+              Choose the service you need. KaamDo asks a suitable worker. A worker is not chosen until one accepts.
+            </p>
+          </div>
+        </div>
+        <div id="featured-services-grid" class="worker-grid-square"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer style="background-color: var(--surface-white); border-top: 1px solid var(--border-color); padding: 40px 0; margin-top: 60px;">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+      <div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary-green);">KaamDo</div>
+        <p class="text-muted" style="font-size: 0.875rem;" data-i18n="home.footer">Local work, services, and equipment rental in Karnataka.</p>
+      </div>
+      <div style="font-size: 0.875rem; color: var(--neutral-gray);">
+        &copy; 2026 KaamDo. All rights reserved. • Built for Indian Rural & Semi-Urban Communities.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="assets/js/config.js?v=cfg1"></script>
+  <script src="assets/js/utils/storage.js"></script>
+  <script src="assets/js/utils/dom.js"></script>
+  <script src="assets/js/api/apiClient.js"></script>
+  <script src="assets/js/api/authApi.js"></script>
+  <script src="assets/js/i18n/messages.js?v=lang5"></script>
+  <script src="assets/js/i18n/i18n.js?v=lang1"></script>
+  <script src="assets/js/components/navbar.js?v=nav3"></script>
+  <script src="assets/js/pages/homeLogic.js?v=services1"></script>
+  <script src="assets/js/pages/home.js?v=services1"></script>
+</body>
+</html>

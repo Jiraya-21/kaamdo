@@ -1,0 +1,74 @@
+/**
+ * KaamDo - Worker Directory Styles
+ * Radius slider (20km default), filter controls, and Square Worker ID layout.
+ */
+
+.directory-page-header {
+  margin: var(--spacing-lg) 0 var(--spacing-md);
+}
+
+.directory-controls-bar {
+  background: var(--surface-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.radius-filter-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+
+.radius-slider {
+  flex-grow: 1;
+  max-width: 240px;
+  accent-color: var(--primary-green);
+  cursor: pointer;
+}
+
+.radius-label-badge {
+  font-weight: 600;
+  color: var(--primary-green);
+  background-color: var(--light-green);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+}
+
+.filter-sort-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.results-count-text {
+  font-size: var(--font-size-sm);
+  color: var(--neutral-gray);
+  font-weight: 500;
+}
+
+/* Empty & Loading States */
+.state-container {
+  padding: var(--spacing-2xl) var(--spacing-md);
+  text-align: center;
+  background-color: var(--surface-white);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  margin: var(--spacing-lg) 0;
+}
+
+.state-icon {
+  font-size: 40px;
+  margin-bottom: var(--spacing-sm);
+  color: var(--neutral-gray);
+}

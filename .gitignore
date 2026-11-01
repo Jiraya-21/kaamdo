@@ -1,0 +1,33 @@
+# Virtual environments
+venv/
+.venv/
+.venv_new/
+venv_old_backup/
+
+# Python cache and packaging leftovers
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Secrets — .env.example is a template and should stay tracked
+.env
+backend/.env
+
+# Local databases
+*.sqlite3
+*.sqlite3.bak*
+
+# Generated Django files
+backend/staticfiles/
+backend/media/
+
+# Logs
+*.log
+
+# Local editor state
+.idea/
+.vscode/

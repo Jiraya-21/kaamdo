@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Find verified local workers, electricians, plumbers, and farm labourers on KaamDo">
+  <title data-i18n="title.directory">Daily service providers - KaamDo</title>
+  
+  <link rel="stylesheet" href="../../assets/css/main.css?v=lang1">
+  <link rel="stylesheet" href="../../assets/css/components.css?v=nav3">
+  <link rel="stylesheet" href="../../assets/css/responsive.css?v=lang1">
+  <link rel="stylesheet" href="../../assets/css/pages/directory.css">
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <main id="app-content">
+    <div class="container">
+      
+      <!-- Directory Page Header -->
+      <div class="directory-page-header">
+        <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--dark-text);" data-i18n="page.workers.title">
+          Published workers
+        </h1>
+        <p class="text-muted" style="font-size: 0.95rem;" data-i18n="page.workers.body">
+          These are published profiles. This is not the daily service request. Asking one person here does not choose that person for you.
+        </p>
+        <p style="margin-top:8px;">
+          <a href="../services/guest-request.html" class="btn btn-primary" data-i18n="page.workers.action">Ask for a daily service</a>
+        </p>
+      </div>
+
+      <!-- Search, Radius Slider & Filter Bar -->
+      <div class="directory-controls-bar">
+        <div class="search-bar-composite">
+          <input 
+            type="text" 
+            id="worker-search-input" 
+            class="search-input-field" 
+            data-i18n-placeholder="directory.searchPlaceholder"
+            placeholder="Search by skill or name"
+          >
+          <select
+            id="worker-district-input"
+            class="search-location-select"
+            data-i18n-aria="directory.district"
+            aria-label="District"
+          ></select>
+        </div>
+
+        <!-- Radius Slider and Geolocation Detection -->
+        <div class="radius-filter-wrapper">
+          <span style="font-size: 0.875rem; font-weight: 600;" data-i18n="directory.radius">Search radius</span>
+          <input 
+            type="range" 
+            id="radius-slider" 
+            class="radius-slider" 
+            min="5" 
+            max="50" 
+            step="5" 
+            value="20"
+          >
+          <span id="radius-badge" class="radius-label-badge">20 km</span>
+          <p id="radius-note" class="text-muted" style="flex-basis:100%; margin:8px 0 0;" data-i18n="directory.radiusNote">Skill, category, district, and radius are applied by the server. Share a location before the kilometre limit is used. Distance is a straight line, not a road.</p>
+
+          <button id="use-geolocation-btn" class="btn btn-outline btn-sm" style="margin-left: auto;" data-i18n="directory.locate">
+            Use this phone location
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Filter Chips -->
+      <div class="filter-sort-row">
+        <div class="filter-chips-container" style="margin: 0;">
+          <button class="filter-chip category-chip active" data-category="All" type="button" data-i18n="directory.all">All services</button>
+        </div>
+        <div id="results-count" class="results-count-text">
+          Loading published workers...
+        </div>
+      </div>
+
+      <!-- RESPONSIVE GRID OF SQUARE WORKER ID CARDS -->
+      <div id="worker-grid-container" class="worker-grid-square">
+        <!-- Dynamically rendered by workerDirectory.js -->
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Scripts -->
+  <script src="../../assets/js/config.js?v=cfg2"></script>
+  <script src="../../assets/js/utils/storage.js"></script>
+  <script src="../../assets/js/utils/dom.js"></script>
+  <script src="../../assets/js/utils/geolocation.js?v=coord1"></script>
+  <script src="../../assets/js/utils/distance.js"></script>
+  <script src="../../assets/js/api/apiClient.js"></script>
+  <script src="../../assets/js/pages/locationFields.js?v=loc1"></script>
+  <script src="../../assets/js/pages/workerDirectoryLogic.js?v=coord1"></script>
+  <script src="../../assets/js/api/authApi.js"></script>
+  <script src="../../assets/js/i18n/messages.js?v=lang6"></script>
+  <script src="../../assets/js/i18n/i18n.js?v=lang1"></script>
+  <script src="../../assets/js/components/navbar.js?v=nav3"></script>
+  <script src="../../assets/js/pages/bookingFlowLogic.js?v=otp1"></script>
+  <script src="../../assets/js/components/bookingFlow.js?v=request5"></script>
+  <script src="../../assets/js/pages/workerDirectory.js?v=services1"></script>
+</body>
+</html>

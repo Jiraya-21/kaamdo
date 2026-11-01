@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Find local jobs, agricultural labour, driving, and helper work on KaamDo">
+  <title data-i18n="title.jobs">Jobs - KaamDo</title>
+  
+  <link rel="stylesheet" href="../../assets/css/main.css?v=lang1">
+  <link rel="stylesheet" href="../../assets/css/components.css?v=nav3">
+  <link rel="stylesheet" href="../../assets/css/responsive.css?v=lang1">
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <main id="app-content">
+    <div class="container" style="max-width: 960px; margin-top: 24px;">
+      
+      <div style="margin-bottom: 20px;">
+        <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--dark-text);" data-i18n="page.jobs.title">
+          Jobs
+        </h1>
+        <p class="text-muted" style="font-size: 0.95rem;">
+          <span data-i18n="page.jobs.body">Published jobs. The filters apply to the full list.</span>
+          <a href="farm-jobs.html" data-i18n="page.farm.link">Farm jobs are a separate list.</a>
+        </p>
+      </div>
+
+      <div class="search-bar-composite" style="margin-bottom: 16px;">
+        <input
+          type="text"
+          id="job-search-input"
+          class="search-input-field"
+          data-i18n-placeholder="list.search"
+          data-i18n-aria="list.search"
+          placeholder="Search title, description, or place"
+        >
+        <select
+          id="job-district-input"
+          class="search-input-field"
+          data-i18n-aria="list.district"
+          aria-label="District"
+        ></select>
+      </div>
+
+      <div class="filter-chips-container">
+        <button type="button" class="filter-chip job-work-type-chip active" data-work-type="" data-i18n="list.all">All</button>
+        <button type="button" class="filter-chip job-work-type-chip" data-work-type="full_time" data-i18n="list.fullTime">Full time</button>
+        <button type="button" class="filter-chip job-work-type-chip" data-work-type="part_time" data-i18n="list.partTime">Part time</button>
+        <button type="button" class="filter-chip job-work-type-chip" data-work-type="temporary" data-i18n="list.temporary">Temporary</button>
+        <button type="button" class="filter-chip job-work-type-chip" data-work-type="contract" data-i18n="list.contract">Contract</button>
+      </div>
+      <p id="jobs-results-count" class="text-muted" style="margin-top: 12px;"></p>
+
+      <div id="jobs-list-container" style="margin-top: 16px;">
+        <!-- Injected by jobList.js -->
+      </div>
+
+    </div>
+  </main>
+
+  <script src="../../assets/js/config.js?v=cfg1"></script>
+  <script src="../../assets/js/utils/storage.js"></script>
+  <script src="../../assets/js/utils/dom.js"></script>
+  <script src="../../assets/js/api/apiClient.js"></script>
+  <script src="../../assets/js/pages/locationFields.js?v=loc1"></script>
+  <script src="../../assets/js/i18n/messages.js?v=lang5"></script>
+  <script src="../../assets/js/i18n/i18n.js?v=lang1"></script>
+  <script src="../../assets/js/components/navbar.js?v=nav3"></script>
+  <script src="../../assets/js/pages/jobListLogic.js"></script>
+  <script src="../../assets/js/pages/jobList.js"></script>
+</body>
+</html>

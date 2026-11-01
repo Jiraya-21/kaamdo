@@ -1,0 +1,15 @@
+# KaamDo backend dependencies
+# Python 3.14.x — Django 6.0 does not support Python 3.15.
+# Pinned to the newest releases that officially support one another:
+# Django 6.0, Django REST Framework 3.18, django-cors-headers 4.9.
+
+Django>=6.0.9,<6.1
+djangorestframework>=3.18.3,<3.19
+django-cors-headers>=4.9.0,<5
+python-dotenv>=1.2.4,<2
+Pillow>=11.0.0,<13
+
+# Optional. Install only when KAAMDO_CACHE_BACKEND=redis:
+# redis>=5,<7
+# Optional. Install only when DB_ENGINE=postgresql:
+# psycopg[binary]>=3.2,<4

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title.account">Account - KaamDo</title>
+  <link rel="stylesheet" href="../../assets/css/main.css?v=ux2">
+  <link rel="stylesheet" href="../../assets/css/components.css?v=ux2">
+  <link rel="stylesheet" href="../../assets/css/responsive.css?v=ux2">
+  <link rel="stylesheet" href="../../assets/css/pages/dashboard.css?v=ux2">
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <main id="app-content">
+    <div class="container account-shell">
+      <div class="account-header account-identity">
+        <div class="account-avatar" id="account-avatar">
+          <img id="account-photo" alt="" hidden>
+          <span id="account-initials" class="account-initials" aria-hidden="true"></span>
+        </div>
+        <div>
+          <h1 id="dashboard-name">Your account</h1>
+          <p id="dashboard-profile" class="text-muted"></p>
+        </div>
+      </div>
+      <p id="dashboard-status" class="account-status" role="status"></p>
+      <p id="test-payment-banner" class="test-mode-banner" hidden role="status"></p>
+      <button type="button" id="session-retry" class="btn btn-primary" hidden data-i18n="account.retry">Try again</button>
+      <section id="provider-status" class="provider-status" hidden></section>
+
+      <section class="account-group">
+        <h2 data-i18n="workspace.roles">Your workspaces</h2>
+        <p class="text-muted" data-i18n="workspace.rolesBody">Open one role at a time. This does not create a new account.</p>
+        <div id="role-list" class="role-list"></div>
+      </section>
+
+      <details class="account-group account-details">
+        <summary data-i18n="workspace.add">Add another role</summary>
+        <p class="text-muted" data-i18n="workspace.addBody">Uses the same mobile number. Approval may still be required.</p>
+        <div id="capability-adder" class="account-actions"></div>
+      </details>
+
+      <details class="account-group account-details">
+        <summary data-i18n="notify.title">Updates</summary>
+        <p id="notification-status" class="text-muted" data-i18n="notify.loading">Loading updates...</p>
+        <div id="notification-list"></div>
+      </details>
+    </div>
+  </main>
+
+  <script src="../../assets/js/config.js?v=cfg1"></script>
+  <script src="../../assets/js/utils/storage.js"></script>
+  <script src="../../assets/js/api/apiClient.js"></script>
+  <script src="../../assets/js/api/authApi.js"></script>
+  <script src="../../assets/js/account/catalog.js"></script>
+  <script src="../../assets/js/account/workspace.js"></script>
+  <script src="../../assets/js/account/session.js"></script>
+  <script src="../../assets/js/pages/serviceRequestAccountLogic.js"></script>
+  <script src="../../assets/js/pages/providerStatusLogic.js"></script>
+  <script src="../../assets/js/pages/providerStatus.js"></script>
+  <script src="../../assets/js/i18n/messages.js?v=ux2"></script>
+  <script src="../../assets/js/i18n/i18n.js?v=lang1"></script>
+  <script src="../../assets/js/components/navbar.js?v=ux1"></script>
+  <script src="../../assets/js/pages/dashboard.js?v=ux2"></script>
+</body>
+</html>

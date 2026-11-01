@@ -1,0 +1,39 @@
+# Optional local PostgreSQL for KaamDo staging practice.
+# This file does not start Django, migrate, send SMS, or publish a site.
+# `docker compose up -d` starts Postgres only. Redis is a separate profile.
+# Data lives in the named volume kaamdo_pgdata, not in backend/db.sqlite3.
+# `docker compose down` keeps that volume. `docker compose down -v` deletes it.
+
+name: kaamdo
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kaamdo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kaamdo_staging}
+      POSTGRES_USER: ${POSTGRES_USER:-kaamdo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kaamdo_dev_only_change_me}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - kaamdo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    profiles: ["cache"]
+    image: redis:7-alpine
+    container_name: kaamdo-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+volumes:
+  kaamdo_pgdata:

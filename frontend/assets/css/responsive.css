@@ -1,0 +1,105 @@
+/**
+ * KaamDo - Responsive Stylesheet
+ * Responsive breakpoints for Mobile, Tablet, and Desktop.
+ */
+
+/* Mobile Phones (up to 767px) */
+@media (max-width: 767px) {
+  :root {
+    --font-size-base: 15px;
+    --font-size-3xl: 1.6rem;
+  }
+
+  body {
+    padding-bottom: 84px; /* Offset for sticky bottom nav */
+  }
+
+  .navbar-links {
+    display: none; /* Page links move to the bottom nav on mobile */
+  }
+
+  .navbar {
+    height: auto;
+    min-height: 68px;
+    flex-wrap: wrap;
+    row-gap: 8px;
+    padding: 8px 0;
+  }
+
+  .mobile-bottom-nav {
+    display: flex;
+  }
+
+  .worker-grid-square {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .search-bar-composite {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-location-select {
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .hero-banner-content {
+    padding: var(--spacing-lg) var(--spacing-sm) !important;
+  }
+
+  .hero-title {
+    font-size: 1.75rem !important;
+  }
+
+  .hero-cta-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .hero-banner-wrapper {
+    min-height: 0;
+    align-items: flex-start;
+  }
+
+  .entry-cards-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .modal-card {
+    padding: var(--spacing-md);
+    margin: var(--spacing-sm);
+  }
+
+  .score-gauge-wrapper {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .form-two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .form-tab-row {
+    flex-direction: column;
+  }
+}
+
+/* Tablets & Small Laptops (768px to 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .worker-grid-square {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .entry-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop Displays (1024px and up) */
+@media (min-width: 1024px) {
+  .worker-grid-square {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

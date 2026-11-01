@@ -1,0 +1,136 @@
+/**
+ * KaamDo - Homepage Specific Styles
+ * Hero banner with Indian rural field photograph, overlay, entry cards, and daily services preview.
+ */
+
+.hero-banner-wrapper {
+  position: relative;
+  background-color: #1b5e20;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin: var(--spacing-md) 0 var(--spacing-xl);
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  box-shadow: var(--shadow-md);
+}
+
+.hero-bg-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: brightness(0.65);
+}
+
+.hero-banner-content {
+  position: relative;
+  z-index: 2;
+  color: #ffffff;
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  max-width: 720px;
+}
+
+.hero-title {
+  font-size: var(--font-size-3xl);
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: var(--spacing-sm);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.hero-subtitle {
+  font-size: var(--font-size-lg);
+  font-weight: 400;
+  color: #F0FDF4;
+  margin-bottom: var(--spacing-lg);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.hero-cta-group {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.hero-cta-group .btn-outline {
+  background-color: #ffffff;
+  color: var(--dark-text);
+  border-color: #ffffff;
+}
+
+@media (max-width: 767px) {
+  .hero-banner-wrapper {
+    min-height: 0;
+    align-items: flex-start;
+  }
+
+  .hero-cta-group {
+    flex-direction: column;
+    width: 100%;
+  }
+}
+
+/* 3 Main Entry Cards */
+.entry-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.entry-card {
+  background: var(--surface-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}
+
+.entry-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: #CBD5E1;
+}
+
+.entry-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--spacing-md);
+  font-size: 24px;
+}
+
+.entry-card-icon.green { background-color: var(--light-green); color: var(--primary-green); }
+.entry-card-icon.blue { background-color: #DBEAFE; color: var(--accent-blue); }
+.entry-card-icon.orange { background-color: #FEF3C7; color: var(--accent-orange); }
+
+.entry-card-title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  margin-bottom: var(--spacing-xs);
+  color: var(--dark-text);
+}
+
+.entry-card-desc {
+  font-size: var(--font-size-sm);
+  color: var(--neutral-gray);
+  margin-bottom: var(--spacing-lg);
+  flex-grow: 1;
+}
+
+/* Popular Services Pills */
+.services-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: var(--spacing-md);
+}

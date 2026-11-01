@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 450" width="1200" height="450" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#93C5FD" />
+      <stop offset="50%" stop-color="#BAE6FD" />
+      <stop offset="100%" stop-color="#E0F2FE" />
+    </linearGradient>
+    <linearGradient id="fieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#84CC16" />
+      <stop offset="40%" stop-color="#4D7C0F" />
+      <stop offset="100%" stop-color="#166534" />
+    </linearGradient>
+  </defs>
+  <!-- Sky -->
+  <rect width="1200" height="240" fill="url(#skyGrad)" />
+  <!-- Sun -->
+  <circle cx="950" cy="90" r="50" fill="#FEF08A" opacity="0.8" />
+  <!-- Hills in distance -->
+  <path d="M0 240 Q300 160 600 230 T1200 210 L1200 240 L0 240 Z" fill="#65A30D" opacity="0.6" />
+  <!-- Green Agriculture Field -->
+  <path d="M0 230 C400 250 800 210 1200 240 L1200 450 L0 450 Z" fill="url(#fieldGrad)" />
+  <!-- Field perspective crop lines -->
+  <line x1="600" y1="235" x2="100" y2="450" stroke="#15803D" stroke-width="4" opacity="0.4" />
+  <line x1="600" y1="235" x2="350" y2="450" stroke="#15803D" stroke-width="4" opacity="0.4" />
+  <line x1="600" y1="235" x2="600" y2="450" stroke="#15803D" stroke-width="5" opacity="0.4" />
+  <line x1="600" y1="235" x2="850" y2="450" stroke="#15803D" stroke-width="4" opacity="0.4" />
+  <line x1="600" y1="235" x2="1100" y2="450" stroke="#15803D" stroke-width="4" opacity="0.4" />
+</svg>

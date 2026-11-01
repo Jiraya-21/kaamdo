@@ -1,0 +1,104 @@
+.worker-profile-page {
+  max-width: 720px;
+  margin-top: 24px;
+}
+
+.worker-profile-hero,
+.worker-profile-body {
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.worker-profile-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.worker-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--primary-green);
+  background: var(--light-gray);
+}
+
+.worker-profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  color: var(--neutral-gray);
+  font-size: 0.95rem;
+}
+
+.worker-availability {
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.worker-availability.is-available {
+  color: var(--primary-green);
+}
+
+.worker-availability.is-unavailable {
+  color: var(--dark-text);
+}
+
+.worker-availability-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--neutral-gray);
+}
+
+.worker-availability.is-available .worker-availability-dot {
+  background: var(--success-green);
+}
+
+.worker-availability.is-unavailable .worker-availability-dot {
+  background: var(--danger-red);
+}
+
+.worker-rate {
+  background: var(--light-green-alt);
+  border: 1px solid #C4E3CC;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  width: 100%;
+}
+
+.worker-skill-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.worker-skill-list .filter-chip {
+  background: var(--light-gray);
+  border-color: #CBD5E1;
+  cursor: default;
+}
+
+.worker-profile-body h2,
+.worker-profile-body h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 16px 0 8px;
+}
+
+@media (min-width: 768px) {
+  .worker-profile-hero {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .worker-rate {
+    width: auto;
+    min-width: 180px;
+  }
+}

@@ -1,0 +1,11 @@
+# Documentation only. This file does not create a Render service.
+# Render free web services cannot run process_daily_matching on a schedule.
+# Cron jobs are paid: https://render.com/docs/cronjobs
+# Free web services spin down: https://render.com/docs/free
+
+# Web process (paid or free preview). Bind the platform PORT.
+# startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+
+# Matching (BLOCKED on free). Paid cron example:
+# startCommand: python manage.py process_daily_matching
+# schedule: "* * * * *"
