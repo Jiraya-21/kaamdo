@@ -55,10 +55,16 @@ const AuthApi = {
     }
     const data = error.data;
     if (!data) {
+      if (error.status >= 500) {
+        return 'The server had an error. The database may still be setting up — wait a minute and try again.';
+      }
       return 'Request failed.';
     }
     if (typeof data.detail === 'string') {
       return data.detail;
+    }
+    if (typeof data === 'string' && data.indexOf('Server Error') !== -1) {
+      return 'The server had an error. The database may still be setting up — wait a minute and try again.';
     }
     const messages = [];
     Object.keys(data).forEach((key) => {
