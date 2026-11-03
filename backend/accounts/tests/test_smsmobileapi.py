@@ -48,9 +48,10 @@ ACCEPTED = json.dumps({
 
 
 class FakeHttpResponse:
-    def __init__(self, body, status=200):
+    def __init__(self, body, status=200, headers=None):
         self._body = body
         self.status = status
+        self.headers = headers or {}
 
     def read(self):
         return self._body
@@ -101,8 +102,27 @@ class SmsMobileApiAdapterTests(SimpleTestCase):
         self.assertEqual(caught.exception.user_message, UNUSABLE)
 
     def test_provider_error_flag_is_refused(self):
-        with self.assertRaises(SmsDeliveryError):
+        with self.assertRaises(SmsDeliveryError) as caught:
             parse_sendsms_body(json.dumps({'result': {'error': 1, 'message': 'fail'}}).encode())
+        self.assertEqual(caught.exception.user_message, REFUSED)
+
+    def test_plain_text_ok_is_accepted(self):
+        result = parse_sendsms_body(b'OK', http_status=200)
+        self.assertTrue(result['accepted'])
+
+    def test_empty_2xx_body_is_accepted(self):
+        result = parse_sendsms_body(b'', http_status=200)
+        self.assertTrue(result['accepted'])
+
+    def test_sanitize_hides_key_phone_and_otp(self):
+        from accounts.smsmobileapi import sanitize_response_text
+        sample = sanitize_response_text(
+            f'apikey={FAKE_KEY}&recipients=+919876543210 code 123456',
+            api_key=FAKE_KEY,
+        )
+        self.assertNotIn(FAKE_KEY, sample)
+        self.assertNotIn('9876543210', sample)
+        self.assertNotIn('123456', sample)
 
     def test_error_zero_is_accepted_even_when_sent_is_zero(self):
         result = parse_sendsms_body(json.dumps({
@@ -115,6 +135,82 @@ class SmsMobileApiAdapterTests(SimpleTestCase):
         result = parse_sendsms_body(json.dumps({'result': {'error': 0}}).encode())
         self.assertTrue(result['accepted'])
         self.assertEqual(result['provider_id'], '')
+
+    def test_flat_success_body_is_accepted(self):
+        result = parse_sendsms_body(json.dumps({
+            'error': 0,
+            'sent': '1',
+            'id': 'flat-provider-id',
+        }).encode())
+        self.assertTrue(result['accepted'])
+        self.assertEqual(result['provider_id'], 'flat-provider-id')
+
+    def test_sms_ok_envelope_is_accepted(self):
+        """Live SMSMobileAPI success body used by the provider test UI."""
+        body = {
+            'sms': {
+                'ok': True,
+                'channel': 'SMS',
+                'message': (
+                    'SMS sent successfully. Verify that the mobile app is running '
+                    'on the connected phone.'
+                ),
+                'details': {
+                    'error': 0,
+                    'sent': '1',
+                    'id': 'test-provider-message-id',
+                    'note': 'sent by mobile',
+                    'datetime': '2026-01-01T00:00:00Z',
+                    'trial_account': {
+                        'status': '1',
+                        'max_allowed': 60,
+                        'sms_sent': 0,
+                    },
+                },
+            }
+        }
+        result = parse_sendsms_body(json.dumps(body).encode())
+        self.assertTrue(result['accepted'])
+        self.assertEqual(result['provider_id'], 'test-provider-message-id')
+
+    def test_sms_ok_envelope_does_not_require_trial_sms_sent(self):
+        body = {
+            'sms': {
+                'ok': True,
+                'details': {
+                    'error': 0,
+                    'sent': '1',
+                    'id': 'trial-zero-count-id',
+                    'trial_account': {'status': '1', 'sms_sent': 0},
+                },
+            }
+        }
+        result = parse_sendsms_body(json.dumps(body).encode())
+        self.assertTrue(result['accepted'])
+        self.assertEqual(result['provider_id'], 'trial-zero-count-id')
+
+    def test_sms_ok_false_is_refused(self):
+        body = {
+            'sms': {
+                'ok': False,
+                'message': 'failed',
+                'details': {'error': 1, 'sent': '0', 'id': ''},
+            }
+        }
+        with self.assertRaises(SmsDeliveryError) as caught:
+            parse_sendsms_body(json.dumps(body).encode())
+        self.assertEqual(caught.exception.user_message, REFUSED)
+
+    def test_sms_details_error_nonzero_is_refused(self):
+        body = {
+            'sms': {
+                'ok': True,
+                'details': {'error': 2, 'sent': '0', 'id': 'ignored'},
+            }
+        }
+        with self.assertRaises(SmsDeliveryError) as caught:
+            parse_sendsms_body(json.dumps(body).encode())
+        self.assertEqual(caught.exception.user_message, REFUSED)
 
     def test_adapter_has_no_delivery_status_url(self):
         from accounts import smsmobileapi
@@ -134,7 +230,7 @@ class SmsMobileApiAdapterTests(SimpleTestCase):
             return FakeHttpResponse(ACCEPTED)
 
         with patch('accounts.smsmobileapi._urlopen', side_effect=fake_urlopen):
-            status, raw = post_sendsms(
+            status, raw, content_type = post_sendsms(
                 {
                     'apikey': FAKE_KEY,
                     'recipients': '+919876543210',
@@ -144,6 +240,9 @@ class SmsMobileApiAdapterTests(SimpleTestCase):
                 8,
             )
         self.assertEqual(status, 200)
+        self.assertEqual(raw, ACCEPTED)
+        self.assertEqual(content_type, '')
+
         self.assertEqual(SEND_URL, 'https://api.smsmobileapi.com/sendsms/')
         self.assertEqual(captured['url'], SEND_URL)
         self.assertEqual(captured['method'], 'POST')
@@ -203,10 +302,16 @@ class SmsMobileApiAdapterTests(SimpleTestCase):
             raise error
 
         with patch('accounts.smsmobileapi._urlopen', side_effect=fake_urlopen):
+            status, raw, content_type = post_sendsms(
+                {'apikey': FAKE_KEY, 'recipients': '+919876543210', 'message': 'x'},
+                10,
+            )
             with self.assertRaises(SmsDeliveryError) as caught:
-                post_sendsms(
-                    {'apikey': FAKE_KEY, 'recipients': '+919876543210', 'message': 'x'},
-                    10,
+                send_message(
+                    '9876543210',
+                    'KaamDo code: 123456.',
+                    api_key=FAKE_KEY,
+                    post=lambda fields, timeout: (status, raw, content_type),
                 )
         self.assertEqual(caught.exception.user_message, UNUSABLE)
         self.assertNotIn(FAKE_KEY, str(caught.exception.user_message))

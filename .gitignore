@@ -27,6 +27,9 @@ backend/media/
 
 # Logs
 *.log
+*.log.err
+*.log.out
+backend/runserver_otp_debug.log*
 
 # Local editor state
 .idea/

@@ -35,6 +35,11 @@ assert.equal(job.wage_amount, '500.00');
 assert.equal(job.wage_negotiable, false);
 assert.equal(job.headcount, 1);
 assert.deepEqual(logic.jobProblems(jobValues), []);
+assert.deepEqual(logic.jobProblems({
+  ...jobValues,
+  district: 'Mumbai City',
+  taluk: '',
+}), []);
 
 const negotiable = logic.jobPayload({ ...jobValues, wageNegotiable: true, wageAmount: '' });
 assert.equal(negotiable.wage_negotiable, true);
@@ -69,7 +74,8 @@ assert.equal(logic.equipmentResult(null).ok, false);
 assert.equal(logic.errorText(new TypeError('Failed to fetch')).includes('Nothing was saved'), true);
 assert.equal(logic.errorText({ status: 401, data: { detail: 'Authentication credentials were not provided.' } }).includes('Nothing was saved'), true);
 assert.equal(logic.errorText({ status: 403, data: { detail: 'Only employer accounts can manage ordinary job posts.' } }), 'Only employer accounts can manage ordinary job posts.');
-assert.equal(logic.errorText({ status: 400, data: { wage_amount: ['Enter a wage, or mark the wage as negotiable.'] } }).includes('wage_amount'), true);
+assert.equal(logic.errorText({ status: 400, data: { wage_amount: ['Enter a wage, or mark the wage as negotiable.'] } }).includes('Enter a wage'), true);
+assert.equal(logic.errorText({ status: 400, data: { wage_amount: ['Enter a wage, or mark the wage as negotiable.'] } }).includes('wage_amount'), false);
 assert.equal(logic.errorText({ status: 500, data: null }).includes('Nothing was saved'), true);
 
 const farmValues = {

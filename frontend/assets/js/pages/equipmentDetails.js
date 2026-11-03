@@ -50,6 +50,17 @@ const EquipmentDetails = {
     const root = this.root();
     root.replaceChildren();
 
+    const photo = document.createElement('img');
+    photo.className = 'listing-detail-photo';
+    photo.src = typeof KaamdoImages !== 'undefined'
+      ? KaamdoImages.equipmentPhoto(listing.photo_url)
+      : '../../assets/images/placeholders/tractor-default.jpg';
+    photo.alt = listing.title || '';
+    photo.onerror = () => {
+      photo.onerror = null;
+      photo.src = '../../assets/images/placeholders/tractor-default.jpg';
+    };
+
     const title = document.createElement('h1');
     title.style.fontSize = '1.85rem';
     title.textContent = listing.title;
@@ -82,7 +93,7 @@ const EquipmentDetails = {
     const description = document.createElement('p');
     description.textContent = listing.description;
 
-    root.append(title, place, rate, operator, availability, owner, description);
+    root.append(photo, title, place, rate, operator, availability, owner, description);
 
     if (listing.status !== 'published') {
       const privateNote = document.createElement('p');

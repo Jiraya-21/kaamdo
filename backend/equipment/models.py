@@ -11,6 +11,8 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator, MinValueValidator
 from django.db import models
 
+from .photos import equipment_photo_upload_to, validate_equipment_photo
+
 
 class ListingStatus(models.TextChoices):
     DRAFT = 'draft', 'Draft'
@@ -61,6 +63,13 @@ class EquipmentListing(models.Model):
     )
     operator_included = models.BooleanField(default=False)
     availability_note = models.CharField(max_length=200, blank=True)
+    photo = models.ImageField(
+        upload_to=equipment_photo_upload_to,
+        blank=True,
+        null=True,
+        validators=[validate_equipment_photo],
+        help_text='Optional public listing photo. JPEG, PNG, or WebP. Maximum 2 MB.',
+    )
     fee_status = models.CharField(max_length=20, choices=FeeStatus.choices, default=FeeStatus.UNPAID)
     fee_note = models.TextField(blank=True)
     status = models.CharField(

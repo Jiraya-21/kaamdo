@@ -29,6 +29,7 @@ const ServiceRequestAccount = {
   mountProvider(card, user) {
     if (typeof ProviderStatus !== 'undefined') {
       this.availabilityState = ProviderStatus.mountAvailability(card, {
+        compact: true,
         onLoaded: (value, hasProfile, data) => {
           this.hasProfile = hasProfile;
           this.availabilityValue = value;
@@ -405,6 +406,19 @@ const ServiceRequestAccount = {
   },
 
   async useLocation(fields, status) {
+    if (typeof LocationDetect !== 'undefined') {
+      await LocationDetect.detect({
+        fields: {
+          district: fields.district,
+          taluk: fields.taluk,
+          locality: fields.locality,
+          latitude: fields.latitude,
+          longitude: fields.longitude,
+        },
+        status,
+      });
+      return;
+    }
     if (typeof GeolocationUtil === 'undefined') {
       status.textContent = this.text('daily.locationFailed');
       return;

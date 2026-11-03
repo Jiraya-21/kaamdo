@@ -10,16 +10,12 @@ const ProviderStatus = {
   },
 
   mountAvailability(container, hooks) {
+    const options = hooks || {};
+    const compact = Boolean(options.compact);
     const wrap = document.createElement('section');
-    wrap.className = 'availability-card';
-    const heading = document.createElement('h2');
-    heading.textContent = this.text('avail.title');
-    const help = document.createElement('p');
-    help.className = 'text-muted';
-    help.textContent = this.text('avail.help');
-    const presence = document.createElement('p');
-    presence.className = 'text-muted';
-    presence.textContent = this.text('avail.presenceNote');
+    wrap.className = compact ? 'availability-card availability-card--compact' : 'availability-card';
+    const heading = document.createElement(compact ? 'h3' : 'h2');
+    heading.textContent = compact ? this.text('avail.shortTitle') : this.text('avail.title');
     const label = document.createElement('label');
     label.className = 'availability-switch';
     const box = document.createElement('input');
@@ -38,11 +34,22 @@ const ProviderStatus = {
     switchLabel.textContent = this.text('avail.switchLabel');
     label.insertBefore(switchLabel, box);
     const status = document.createElement('p');
+    status.className = compact ? 'availability-status-line' : '';
     status.setAttribute('role', 'status');
     const needLink = document.createElement('a');
-    needLink.className = 'btn btn-outline';
+    needLink.className = compact ? 'btn btn-outline btn-sm' : 'btn btn-outline';
     needLink.hidden = true;
-    wrap.append(heading, help, presence, label, status, needLink);
+    if (compact) {
+      wrap.append(heading, label, status, needLink);
+    } else {
+      const help = document.createElement('p');
+      help.className = 'text-muted';
+      help.textContent = this.text('avail.help');
+      const presence = document.createElement('p');
+      presence.className = 'text-muted';
+      presence.textContent = this.text('avail.presenceNote');
+      wrap.append(heading, help, presence, label, status, needLink);
+    }
     container.appendChild(wrap);
     const state = {
       box,
@@ -71,9 +78,10 @@ const ProviderStatus = {
     state.box.setAttribute('aria-checked', value === 'available' ? 'true' : 'false');
     state.wrap.classList.toggle('is-available', value === 'available');
     state.wrap.classList.toggle('is-unavailable', value === 'unavailable');
+    const compact = state.wrap.classList.contains('availability-card--compact');
     state.caption.textContent = value === 'available'
-      ? this.text('avail.online')
-      : this.text('avail.offline');
+      ? this.text(compact ? 'avail.available' : 'avail.online')
+      : this.text(compact ? 'avail.notAvailable' : 'avail.offline');
   },
 
   async loadAvailability(state) {

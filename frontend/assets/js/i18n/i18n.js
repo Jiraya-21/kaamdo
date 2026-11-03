@@ -5,7 +5,7 @@
 
 const I18n = {
   STORAGE_KEY: 'kaamdo_lang',
-  SUPPORTED: ['en', 'kn', 'hi'],
+  SUPPORTED: ['en', 'kn', 'hi', 'mr'],
   DEFAULT: 'en',
 
   normalize(code) {

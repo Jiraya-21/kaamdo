@@ -14,9 +14,11 @@ from .database import database_settings
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables from root or backend directory
-load_dotenv(BASE_DIR.parent / '.env')
-load_dotenv(BASE_DIR / '.env')
+# Load environment variables from root or backend directory.
+# override=True so a stale parent-shell SMS/OTP export cannot keep a refused key
+# after .env was updated. Backend .env wins over the repo-root .env.
+load_dotenv(BASE_DIR.parent / '.env', override=True)
+load_dotenv(BASE_DIR / '.env', override=True)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-kaamdo-placeholder-key-for-local-dev-only')
@@ -143,8 +145,8 @@ _csrf_trusted_env = os.getenv('CSRF_TRUSTED_ORIGINS')
 # A code is shown only when DEBUG is on and this is explicitly "development".
 # SMSMobileAPI is used only when this is explicitly "smsmobileapi" and a server key is set.
 # The default refuses to create or display a code.
-OTP_DELIVERY = os.getenv('KAAMDO_OTP_DELIVERY', 'unconfigured')
-SMSMOBILEAPI_API_KEY = os.getenv('SMSMOBILEAPI_API_KEY', '')
+OTP_DELIVERY = str(os.getenv('KAAMDO_OTP_DELIVERY', 'unconfigured') or 'unconfigured').strip().lower()
+SMSMOBILEAPI_API_KEY = str(os.getenv('SMSMOBILEAPI_API_KEY', '') or '').strip()
 try:
     _sms_timeout = int(os.getenv('SMSMOBILEAPI_TIMEOUT_SECONDS', '10') or '10')
 except (TypeError, ValueError):
@@ -192,14 +194,15 @@ KAAMDO_VISIT_PAYMENT = os.getenv('KAAMDO_VISIT_PAYMENT', 'unconfigured')
 KAAMDO_MATCH_BATCH_SIZE = _bounded_int('KAAMDO_MATCH_BATCH_SIZE', 3, 1, 10)
 KAAMDO_MATCH_OFFER_WINDOW_SECONDS = _bounded_int('KAAMDO_MATCH_OFFER_WINDOW_SECONDS', 180, 30, 3600)
 KAAMDO_MATCH_MAX_ROUNDS = _bounded_int('KAAMDO_MATCH_MAX_ROUNDS', 6, 1, 20)
-KAAMDO_MATCH_MAX_RADIUS_KM = _bounded_int('KAAMDO_MATCH_MAX_RADIUS_KM', 50, 8, 50)
+# Hard ceiling for staged search. Customer radius_km may be 5-100; stages stay 8,15,20.
+KAAMDO_MATCH_MAX_RADIUS_KM = _bounded_int('KAAMDO_MATCH_MAX_RADIUS_KM', 100, 8, 100)
 _match_stages = []
 for _stage in os.getenv('KAAMDO_MATCH_RADIUS_STAGES', '8,15,20').split(','):
     try:
         _value = int(_stage.strip())
     except (TypeError, ValueError):
         continue
-    if 8 <= _value <= 50 and _value not in _match_stages:
+    if 5 <= _value <= 100 and _value not in _match_stages:
         _match_stages.append(_value)
 KAAMDO_MATCH_RADIUS_STAGES = tuple(_match_stages or (8, 15, 20))
 
@@ -237,6 +240,22 @@ KAAMDO_MAP_ATTRIBUTION = os.getenv(
     'KAAMDO_MAP_ATTRIBUTION',
     'Map data © OpenStreetMap contributors',
 )
+# Reverse geocode only. Default nominatim_reverse. Tests force none.
+# Never use public Nominatim for autocomplete or search-as-you-type.
+KAAMDO_GEOCODE_PROVIDER = os.getenv(
+    'KAAMDO_GEOCODE_PROVIDER',
+    'nominatim_reverse',
+).strip().lower() or 'none'
+KAAMDO_GEOCODE_USER_AGENT = os.getenv(
+    'KAAMDO_GEOCODE_USER_AGENT',
+    'KaamDo/1.0 (reverse-geocode; local development)',
+)
+try:
+    KAAMDO_GEOCODE_TIMEOUT_SECONDS = int(os.getenv('KAAMDO_GEOCODE_TIMEOUT_SECONDS', '8') or '8')
+except ValueError:
+    KAAMDO_GEOCODE_TIMEOUT_SECONDS = 8
+if 'test' in sys.argv:
+    KAAMDO_GEOCODE_PROVIDER = 'none'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

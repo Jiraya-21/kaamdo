@@ -15,11 +15,7 @@ const NavbarComponent = {
         <header class="navbar-header">
           <div class="container navbar">
             <a href="${basePath}index.html" class="navbar-brand">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="36" height="36">
-                <rect width="40" height="40" rx="8" fill="#237E43"/>
-                <path d="M12 28 L20 12 L28 28 Z" fill="#ffffff"/>
-                <circle cx="28" cy="14" r="4" fill="#F59E0B" />
-              </svg>
+              <img src="${basePath}assets/images/logo.png" alt="KaamDo" width="40" height="40">
               <span>KaamDo</span>
             </a>
 
@@ -37,6 +33,7 @@ const NavbarComponent = {
                   <option value="en">English</option>
                   <option value="kn">ಕನ್ನಡ</option>
                   <option value="hi">हिन्दी</option>
+                  <option value="mr">मराठी</option>
                 </select>
               </label>
               ${this.hasSavedSession() ? `

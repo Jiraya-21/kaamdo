@@ -46,9 +46,31 @@ const PostFormController = {
   },
 
   bindPlaces() {
-    if (typeof LocationFields === 'undefined') return;
-    LocationFields.enhanceByIds({ district: 'job-district', taluk: 'job-taluk', locality: 'job-locality' });
-    LocationFields.enhanceByIds({ district: 'equip-district', taluk: 'equip-taluk', locality: 'equip-locality' });
+    if (typeof LocationFields !== 'undefined') {
+      LocationFields.enhanceByIds({ state: 'job-state', district: 'job-district', taluk: 'job-taluk', locality: 'job-locality' });
+      LocationFields.enhanceByIds({ state: 'equip-state', district: 'equip-district', taluk: 'equip-taluk', locality: 'equip-locality' });
+    }
+    if (typeof LocationDetect === 'undefined') return;
+    LocationDetect.bind({
+      button: document.getElementById('job-locate'),
+      status: document.getElementById('job-location-state'),
+      fields: {
+        state: document.getElementById('job-state'),
+        district: document.getElementById('job-district'),
+        taluk: document.getElementById('job-taluk'),
+        locality: document.getElementById('job-locality'),
+      },
+    });
+    LocationDetect.bind({
+      button: document.getElementById('equip-locate'),
+      status: document.getElementById('equip-location-state'),
+      fields: {
+        state: document.getElementById('equip-state'),
+        district: document.getElementById('equip-district'),
+        taluk: document.getElementById('equip-taluk'),
+        locality: document.getElementById('equip-locality'),
+      },
+    });
   },
 
   bindForms() {
@@ -155,6 +177,14 @@ const PostFormController = {
         PostFormLogic.EQUIPMENT_PATH,
         PostFormLogic.equipmentPayload(values),
       );
+      const photoInput = document.getElementById('equip-photo');
+      const file = photoInput && photoInput.files && photoInput.files[0];
+      if (file && saved && saved.id) {
+        const body = new FormData();
+        body.append('photo', file, file.name);
+        await ApiClient.postForm(`/equipment/${saved.id}/photo/`, body);
+        if (photoInput) photoInput.value = '';
+      }
       const result = PostFormLogic.equipmentResult(saved);
       this.show(notice, result.text);
     } catch (error) {

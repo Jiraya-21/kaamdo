@@ -376,6 +376,38 @@ SOURCES = (
         'url': 'https://en.wikipedia.org/wiki/List_of_taluks_of_Karnataka',
         'used_for': 'Taluk names by district. Spellings were cleaned. Villages and coordinates were not copied.',
     },
+    {
+        'label': 'List of districts of Maharashtra',
+        'url': 'https://en.wikipedia.org/wiki/List_of_districts_of_Maharashtra',
+        'used_for': 'Official 36 Maharashtra districts. Villages, streets, and PIN codes were not copied.',
+    },
+    {
+        'label': 'List of talukas of Maharashtra',
+        'url': 'https://en.wikipedia.org/wiki/List_of_talukas_of_Maharashtra',
+        'used_for': 'Maharashtra talukas by district, citing the state government. Mumbai City has no taluka row.',
+    },
+)
+
+from .maharashtra import (
+    DISTRICT_RECORDS as MH_DISTRICT_RECORDS,
+    STATE_CODE as MH_STATE_CODE,
+    STATE_NAME as MH_STATE_NAME,
+    TALUKS_BY_DISTRICT as MH_TALUKS_BY_DISTRICT,
+)
+
+STATE_RECORDS = (
+    {
+        'code': STATE_CODE,
+        'name': STATE_NAME,
+        'districts': DISTRICT_RECORDS,
+        'taluks': TALUKS_BY_DISTRICT,
+    },
+    {
+        'code': MH_STATE_CODE,
+        'name': MH_STATE_NAME,
+        'districts': MH_DISTRICT_RECORDS,
+        'taluks': MH_TALUKS_BY_DISTRICT,
+    },
 )
 
 
@@ -385,31 +417,70 @@ def _norm(value):
 
 def _district_lookup():
     table = {}
-    for name, aliases in DISTRICT_RECORDS:
-        table[_norm(name)] = name
-        for alias in aliases:
-            table[_norm(alias)] = name
+    for state in STATE_RECORDS:
+        for name, aliases in state['districts']:
+            table[_norm(name)] = name
+            for alias in aliases:
+                table[_norm(alias)] = name
     return table
 
 
 def _taluk_lookup():
     table = {}
-    for district, rows in TALUKS_BY_DISTRICT.items():
-        inner = {}
-        for name, aliases in rows:
-            inner[_norm(name)] = name
+    for state in STATE_RECORDS:
+        for district, rows in state['taluks'].items():
+            inner = {}
+            for name, aliases in rows:
+                inner[_norm(name)] = name
+                for alias in aliases:
+                    inner[_norm(alias)] = name
+            table[district] = inner
+    return table
+
+
+def _state_lookup():
+    table = {}
+    for state in STATE_RECORDS:
+        table[_norm(state['name'])] = state['name']
+        table[_norm(state['code'])] = state['name']
+    table[_norm('karnātaka')] = STATE_NAME
+    table[_norm('ಕರ್ನಾಟಕ')] = STATE_NAME
+    table[_norm('महाराष्ट्र')] = MH_STATE_NAME
+    return table
+
+
+def _district_state_lookup():
+    table = {}
+    for state in STATE_RECORDS:
+        for name, aliases in state['districts']:
+            table[name] = state['name']
             for alias in aliases:
-                inner[_norm(alias)] = name
-        table[district] = inner
+                table[_norm(alias)] = state['name']
     return table
 
 
 DISTRICT_LOOKUP = _district_lookup()
 TALUK_LOOKUP = _taluk_lookup()
+STATE_LOOKUP = _state_lookup()
+COMBINED_TALUKS = {}
+for _state in STATE_RECORDS:
+    COMBINED_TALUKS.update(_state['taluks'])
+DISTRICT_STATE_LOOKUP = _district_state_lookup()
 
 
 def district_names():
     return [name for name, _aliases in DISTRICT_RECORDS]
+
+
+def normalize_state(value):
+    return STATE_LOOKUP.get(_norm(value), '')
+
+
+def state_for_district(value):
+    official = normalize_district(value)
+    if not official:
+        return ''
+    return DISTRICT_STATE_LOOKUP.get(official, '')
 
 
 def normalize_district(value):
@@ -420,7 +491,7 @@ def taluk_names(district):
     official = normalize_district(district)
     if not official:
         return []
-    return [name for name, _aliases in TALUKS_BY_DISTRICT[official]]
+    return [name for name, _aliases in COMBINED_TALUKS.get(official, ())]
 
 
 def normalize_taluk(district, value):
@@ -435,16 +506,29 @@ def has_coordinates(payload):
     return 'latitude' in text or 'longitude' in text or 'lat' in text and 'lon' in text
 
 
-def catalog_payload():
-    districts = []
-    for name, _aliases in DISTRICT_RECORDS:
-        districts.append({
+def _district_rows(records, taluks):
+    rows = []
+    for name, _aliases in records:
+        rows.append({
             'name': name,
-            'taluks': [taluk for taluk, _aliases in TALUKS_BY_DISTRICT[name]],
+            'taluks': [taluk for taluk, _taluk_aliases in taluks.get(name, ())],
+        })
+    return rows
+
+
+def catalog_payload():
+    districts = _district_rows(DISTRICT_RECORDS, TALUKS_BY_DISTRICT)
+    states = []
+    for state in STATE_RECORDS:
+        states.append({
+            'code': state['code'],
+            'name': state['name'],
+            'districts': _district_rows(state['districts'], state['taluks']),
         })
     return {
         'state': {'code': STATE_CODE, 'name': STATE_NAME},
         'districts': districts,
+        'states': states,
         'sources': list(SOURCES),
     }
 

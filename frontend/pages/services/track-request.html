@@ -4,66 +4,84 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="title.track">Track a request - KaamDo</title>
-  <link rel="stylesheet" href="../../assets/css/main.css?v=lang1">
-  <link rel="stylesheet" href="../../assets/css/components.css?v=nav3">
-  <link rel="stylesheet" href="../../assets/css/responsive.css?v=lang1">
-  <link rel="stylesheet" href="../../assets/css/pages/guest-request.css?v=guest6">
+  <link rel="icon" type="image/png" href="../../assets/images/favicon.png">
+  <link rel="stylesheet" href="../../assets/css/main.css?v=resp1">
+  <link rel="stylesheet" href="../../assets/css/components.css?v=track4">
+  <link rel="stylesheet" href="../../assets/css/responsive.css?v=resp1">
+  <link rel="stylesheet" href="../../assets/css/pages/guest-request.css?v=track4">
 </head>
 <body>
   <div id="navbar-container"></div>
   <main id="app-content">
-    <div class="container guest-page">
+    <div class="container guest-page track-simple">
       <header class="guest-intro">
-        <h1 data-i18n="track.title">Track an existing request</h1>
-        <p data-i18n="track.lead">You need the request number and the tracking key shown when the request was saved. The tracking key is not a login password. Do not share it.</p>
-        <p class="guest-track-link">
-          <a href="guest-request.html" data-i18n="track.newRequest">Request a service</a>
-          <a id="track-my-requests" href="../services/customer.html" hidden data-i18n="guest.myRequests">My requests</a>
-        </p>
+        <h1 data-i18n="track.title">Track your request</h1>
+        <p data-i18n="track.leadSimple">Choose how you booked.</p>
       </header>
 
-      <section class="card guest-step track-panel" aria-labelledby="guest-status-heading">
-        <h2 id="guest-status-heading" data-i18n="track.formHeading">See how the work is going</h2>
-        <p class="guest-lead" data-i18n="track.formLead">Enter the two details shown after you saved. This does not assign a worker and does not take money.</p>
-        <ol class="track-need">
-          <li>
-            <strong data-i18n="track.needNumberTitle">Request number</strong>
-            <p data-i18n="track.needNumberBody">The short number KaamDo showed after you saved. It is not a password.</p>
-          </li>
-          <li>
-            <strong data-i18n="track.needKeyTitle">Tracking key</strong>
-            <p data-i18n="track.needKeyBody">A secret shown only once. Anyone who has both the number and this key can see this request. Do not share them.</p>
-          </li>
-        </ol>
-        <form id="guest-status-form" autocomplete="off">
-          <div class="guest-layout">
-            <div class="form-group">
-              <label class="form-label" for="status-reference" data-i18n="track.needNumberTitle">Request number</label>
-              <input id="status-reference" class="form-input" inputmode="numeric" autocomplete="off" required aria-describedby="status-reference-help">
-              <p id="status-reference-help" class="guest-lead" data-i18n="track.referenceHelp">Type the request number here.</p>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="status-access-key" data-i18n="track.needKeyTitle">Tracking key</label>
-              <input id="status-access-key" class="form-input" autocomplete="off" spellcheck="false" required aria-describedby="status-key-help">
-              <p id="status-key-help" class="guest-lead" data-i18n="track.keyHelp">Type the tracking key here. It is not stored in this page’s address.</p>
-            </div>
+      <section id="track-chooser" class="track-chooser" aria-label="Choose tracking path">
+        <button type="button" id="track-choose-account" class="track-choice-btn">
+          <strong data-i18n="track.accountPathTitle">I have an account</strong>
+          <span data-i18n="track.accountPathBody">Open My requests in your account. Status is there. No secret code needed.</span>
+        </button>
+        <button type="button" id="track-choose-guest" class="track-choice-btn">
+          <strong data-i18n="track.guestPathTitle">I booked as guest</strong>
+          <span data-i18n="track.guestPathBodyPhone">Enter the same mobile number you verified when booking. We show every request for that number.</span>
+        </button>
+      </section>
+
+      <section id="track-account-path" class="card guest-step track-choice" hidden>
+        <button type="button" class="track-back" id="track-back-account" data-i18n="guest.back">Back</button>
+        <h2 data-i18n="track.accountPathTitle">I have an account</h2>
+        <p class="guest-lead" data-i18n="track.accountPathBody">Open My requests in your account. Status is there. No secret code needed.</p>
+        <a id="track-my-requests" class="btn btn-primary btn-block" href="../services/customer.html?view=track" data-i18n="guest.myRequests">My service requests</a>
+        <a class="btn btn-outline btn-block action-gap" href="../auth/login.html" id="track-login-link" data-i18n="nav.login">Log in</a>
+      </section>
+
+      <section id="track-guest-path" class="card guest-step track-choice" aria-labelledby="guest-status-heading" hidden>
+        <button type="button" class="track-back" id="track-back-guest" data-i18n="guest.back">Back</button>
+        <h2 id="guest-status-heading" data-i18n="track.guestPathTitle">I booked as guest</h2>
+        <p class="guest-lead" data-i18n="track.guestPathBodyPhone">Enter the same mobile number you verified when booking. We show every request for that number.</p>
+
+        <form id="track-phone-form" autocomplete="off">
+          <div class="form-group">
+            <label class="form-label" for="track-phone" data-i18n="guest.verifiedPhone">Checked mobile number</label>
+            <input id="track-phone" class="form-input" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel" required>
           </div>
           <div class="guest-actions">
-            <button id="status-submit" class="btn btn-primary" type="submit" data-i18n="track.submit">See status</button>
+            <button id="track-send-code" class="btn btn-primary btn-block" type="submit" data-i18n="guest.sendCode">Send OTP</button>
           </div>
         </form>
+
+        <form id="track-verify-form" autocomplete="off" hidden>
+          <div class="form-group">
+            <label class="form-label" for="track-code" data-i18n="guest.code">6-digit code</label>
+            <input id="track-code" class="form-input" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required>
+          </div>
+          <div class="guest-actions">
+            <button id="track-verify-code" class="btn btn-primary btn-block" type="submit" data-i18n="guest.verify">Check code</button>
+          </div>
+        </form>
+
         <p id="status-notice" class="form-notice" role="status"></p>
-        <div id="status-result" class="track-result" hidden></div>
+        <div id="track-request-list" class="track-request-list" hidden></div>
+        <div id="status-result" class="track-result track-result-simple" hidden></div>
       </section>
+
+      <p class="guest-track-link">
+        <a href="guest-request.html" data-i18n="track.newRequest">Ask for a service</a>
+      </p>
     </div>
   </main>
   <script src="../../assets/js/config.js?v=cfg1"></script>
   <script src="../../assets/js/utils/storage.js"></script>
   <script src="../../assets/js/api/apiClient.js"></script>
-  <script src="../../assets/js/pages/guestServiceLogic.js?v=match1"></script>
-  <script src="../../assets/js/i18n/messages.js?v=otp6"></script>
+  <script src="../../assets/js/pages/guestServiceLogic.js?v=track4"></script>
+  <script src="../../assets/js/components/mockCheckout.js?v=pay1"></script>
+  <script src="../../assets/js/components/workerIdentityCard.js?v=hub1"></script>
+  <script src="../../assets/js/i18n/messages.js?v=track4"></script>
   <script src="../../assets/js/i18n/i18n.js?v=lang1"></script>
-  <script src="../../assets/js/components/navbar.js?v=ux1"></script>
-  <script src="../../assets/js/pages/trackRequest.js?v=match1"></script>
+  <script src="../../assets/js/components/navbar.js?v=real1"></script>
+  <script src="../../assets/js/pages/trackRequest.js?v=track5"></script>
 </body>
 </html>

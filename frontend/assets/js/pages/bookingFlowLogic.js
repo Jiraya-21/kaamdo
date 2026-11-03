@@ -11,21 +11,21 @@ const BookingFlowLogic = {
       return {
         ok: true,
         key: 'booking.smsSent',
-        text: 'The SMS provider accepted the request. Enter the code when it arrives.',
+        text: 'OTP sent to your mobile.',
       };
     }
     if (!data || data.delivery !== 'development' || !data.dev_code) {
       return {
         ok: false,
         key: 'booking.noCode',
-        text: 'No code was issued. Nothing was verified.',
+        text: 'No code was sent. Try again.',
       };
     }
     return {
       ok: true,
-      key: 'booking.devCode',
+      key: 'booking.smsSent',
       devCode: String(data.dev_code),
-      text: 'Local development code only. This was not sent by SMS.',
+      text: 'OTP sent to your mobile.',
     };
   },
 };

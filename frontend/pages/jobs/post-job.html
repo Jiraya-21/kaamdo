@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="title.postJob">Post a job or list equipment - KaamDo</title>
   <link rel="stylesheet" href="../../assets/css/main.css?v=lang2">
-  <link rel="stylesheet" href="../../assets/css/components.css?v=nav3">
+  <link rel="stylesheet" href="../../assets/css/components.css?v=rad1">
   <link rel="stylesheet" href="../../assets/css/responsive.css?v=lang2">
 </head>
 <body>
@@ -46,6 +46,10 @@
           </div>
           <div class="form-two-col">
             <div class="form-group">
+              <label class="form-label" for="job-state" data-i18n="form.state">State</label>
+              <select id="job-state" class="form-select" required></select>
+            </div>
+            <div class="form-group">
               <label class="form-label" for="job-district" data-i18n="form.district">District</label>
               <select id="job-district" class="form-select" required></select>
             </div>
@@ -57,6 +61,10 @@
               <label class="form-label" for="job-locality" data-i18n="form.locality">Locality</label>
               <input type="text" id="job-locality" class="form-input" maxlength="120" required>
             </div>
+          </div>
+          <div class="form-group">
+            <button id="job-locate" class="btn btn-outline" type="button" data-i18n="guest.locate">Use this phone location</button>
+            <p id="job-location-state" class="form-notice" role="status"></p>
           </div>
           <div class="form-group">
             <label class="form-label" for="job-description" data-i18n="form.description">Description</label>
@@ -90,7 +98,7 @@
       <div id="form-list-equip" class="card" style="padding:28px; display:none;">
         <h2 style="font-size:1.5rem; font-weight:700; margin-bottom:8px;" data-i18n="form.equipHeading">List equipment</h2>
         <p class="text-muted" style="margin-bottom:18px;">
-          <span data-i18n="form.equipLead">A new listing is saved as a private draft. There is no category or photo field.</span>
+          <span data-i18n="form.equipLead">A new listing is saved as a private draft. You can add one photo.</span>
           <a href="../auth/login.html" data-i18n="form.signIn">Sign in</a>
         </p>
         <form id="equipment-create-form">
@@ -99,6 +107,10 @@
             <input type="text" id="equip-title" class="form-input" maxlength="120" required>
           </div>
           <div class="form-two-col">
+            <div class="form-group">
+              <label class="form-label" for="equip-state" data-i18n="form.state">State</label>
+              <select id="equip-state" class="form-select" required></select>
+            </div>
             <div class="form-group">
               <label class="form-label" for="equip-district" data-i18n="form.district">District</label>
               <select id="equip-district" class="form-select" required></select>
@@ -111,6 +123,10 @@
               <label class="form-label" for="equip-locality" data-i18n="form.locality">Locality</label>
               <input type="text" id="equip-locality" class="form-input" maxlength="120" required>
             </div>
+          </div>
+          <div class="form-group">
+            <button id="equip-locate" class="btn btn-outline" type="button" data-i18n="guest.locate">Use this phone location</button>
+            <p id="equip-location-state" class="form-notice" role="status"></p>
           </div>
           <div class="form-two-col">
             <div class="form-group">
@@ -138,6 +154,10 @@
             <label class="form-label" for="equip-availability" data-i18n="form.availability">Availability note</label>
             <input type="text" id="equip-availability" class="form-input" maxlength="200">
           </div>
+          <div class="form-group">
+            <label class="form-label" for="equip-photo" data-i18n="form.equipPhoto">Photo (optional)</label>
+            <input type="file" id="equip-photo" class="form-input" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp">
+          </div>
           <p id="equipment-notice" role="status" style="min-height:1.25rem;"></p>
           <button id="equipment-submit" type="submit" class="btn btn-primary btn-block" style="margin-top:16px; padding:12px;" data-i18n="form.saveListing">Save listing</button>
         </form>
@@ -147,13 +167,15 @@
 
   <script src="../../assets/js/config.js?v=cfg2"></script>
   <script src="../../assets/js/utils/storage.js"></script>
+  <script src="../../assets/js/utils/geolocation.js?v=coord2"></script>
   <script src="../../assets/js/api/apiClient.js"></script>
   <script src="../../assets/js/account/session.js"></script>
-  <script src="../../assets/js/pages/locationFields.js?v=loc1"></script>
-  <script src="../../assets/js/pages/postFormLogic.js?v=loc1"></script>
-  <script src="../../assets/js/i18n/messages.js?v=lang6"></script>
+  <script src="../../assets/js/pages/locationFields.js?v=loc3"></script>
+  <script src="../../assets/js/pages/locationDetect.js?v=loc5"></script>
+  <script src="../../assets/js/pages/postFormLogic.js?v=loc3"></script>
+  <script src="../../assets/js/i18n/messages.js?v=rad1"></script>
   <script src="../../assets/js/i18n/i18n.js?v=lang1"></script>
-  <script src="../../assets/js/components/navbar.js?v=nav3"></script>
+  <script src="../../assets/js/components/navbar.js?v=real1"></script>
   <script src="../../assets/js/pages/postJob.js"></script>
 </body>
 </html>

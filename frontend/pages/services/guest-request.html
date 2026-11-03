@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="title.guest">Request a service - KaamDo</title>
-  <link rel="stylesheet" href="../../assets/css/main.css?v=lang1">
-  <link rel="stylesheet" href="../../assets/css/components.css?v=nav3">
-  <link rel="stylesheet" href="../../assets/css/responsive.css?v=lang1">
-  <link rel="stylesheet" href="../../assets/css/pages/guest-request.css?v=guest5">
+  <link rel="stylesheet" href="../../assets/css/main.css?v=resp1">
+  <link rel="stylesheet" href="../../assets/css/components.css?v=resp1">
+  <link rel="stylesheet" href="../../assets/css/responsive.css?v=resp1">
+  <link rel="stylesheet" href="../../assets/css/pages/guest-request.css?v=resp1">
 </head>
 <body>
   <div id="navbar-container"></div>
@@ -17,7 +17,8 @@
         <h1 data-i18n="guest.title">Request a service</h1>
         <p data-i18n="guest.intro">KaamDo helps match you with an eligible provider nearby. Saving this does not assign a worker and does not take money.</p>
         <p class="guest-track-link">
-          <a href="track-request.html" data-i18n="guest.trackLink">Track an existing request</a>
+          <a href="price-menu.html" data-i18n="pay.viewMenu">See price menu</a>
+          <a href="track-request.html" data-i18n="guest.trackLink">Track your request</a>
         </p>
       </header>
 
@@ -51,7 +52,7 @@
           <div class="guest-layout">
             <div class="form-group">
               <label class="form-label" for="request-state" data-i18n="form.state">State</label>
-              <input id="request-state" class="form-input" value="Karnataka" readonly>
+              <select id="request-state" class="form-select" required></select>
             </div>
             <div class="form-group">
               <label class="form-label" for="request-district" data-i18n="form.district">District</label>
@@ -68,19 +69,27 @@
               <input id="request-place" class="form-input" maxlength="120" autocomplete="street-address">
             </div>
           </div>
+          <div class="guest-layout">
+            <div class="form-group">
+              <label class="form-label" for="request-street" data-i18n="form.street">Street</label>
+              <input id="request-street" class="form-input" maxlength="120">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="request-pin" data-i18n="form.pin">PIN code</label>
+              <input id="request-pin" class="form-input" maxlength="6" inputmode="numeric">
+            </div>
+          </div>
           <div class="form-group">
-            <label class="form-label" for="request-radius" data-i18n="guest.radius">How far to search (8 to 50 km)</label>
-            <input id="request-radius" class="form-input" type="number" min="8" max="50" value="15" required>
+            <label class="form-label" for="request-radius" data-i18n="guest.radius">How far to search</label>
+            <div class="radius-slider">
+              <input id="request-radius" class="radius-slider-input" type="range" min="5" max="100" step="5" value="60" required>
+              <p id="request-radius-value" class="radius-readout" aria-live="polite">60 km</p>
+            </div>
           </div>
           <p class="guest-lead" data-i18n="guest.placeHelp">Choose the official district and taluk, then type your locality. Nearby providers are found from this phone location, not from a map pin we invent.</p>
           <div class="guest-actions">
             <button id="guest-locate" class="btn btn-outline" type="button" data-i18n="guest.locate">Use this phone location</button>
           </div>
-          <!-- <div class="form-group">
-            <label  class="form-label"  for="request-radius" data-i18n="guest.radius">How far to search (8 to 50 km)</label>
-            <input type="range" min="5" max="50" default="20" id="request-radius" required>
-          </div> 
-            -->
 
 
 
@@ -129,7 +138,7 @@
               <input id="guest-email" class="form-input" type="email" autocomplete="email">
             </div>
             <div class="guest-actions">
-              <button id="guest-send-code" class="btn btn-outline" type="submit" data-i18n="guest.sendCode">Send practice code</button>
+              <button id="guest-send-code" class="btn btn-outline" type="submit" data-i18n="guest.sendCode">Send OTP</button>
             </div>
           </form>
           <form id="guest-verify-form" autocomplete="off" hidden>
@@ -163,14 +172,20 @@
         <div id="request-confirmation" class="guest-confirm" hidden>
           <h3 data-i18n="guest.confirmTitle">Request saved</h3>
           <p id="confirm-summary"></p>
+          <p class="form-notice is-info" data-i18n="guest.payNextBody">1) Mobile verified  2) Pay inspection fee  3) Then we offer workers. This stops fake bookings.</p>
           <p><span data-i18n="guest.referenceLabel">Reference</span> <strong id="confirm-reference"></strong></p>
           <p><span data-i18n="guest.statusLabel">Status</span> <strong id="confirm-status"></strong></p>
-          <p id="confirm-key-copy" data-i18n="guest.saveKey">Save this private tracking key. You need it to check the request later. This page will not show it again after you leave.</p>
-          <p id="confirm-access-key" class="guest-key"></p>
+          <p id="confirm-fee-line" class="guest-lead" hidden></p>
+          <div id="confirm-pay-wrap" class="guest-actions" hidden>
+            <button id="confirm-pay-fee" class="btn btn-primary" type="button" data-i18n="guest.payNow">Pay inspection fee (test)</button>
+          </div>
+          <p class="form-notice is-info" data-i18n="track.guestPathBodyPhone">Enter the same mobile number you verified when booking. We show every request for that number.</p>
+          <p id="confirm-key-copy" hidden data-i18n="guest.saveKey">Save this private tracking key. You need it to check the request later. This page will not show it again after you leave.</p>
+          <p id="confirm-access-key" class="guest-key" hidden></p>
           <div class="guest-actions">
+            <a id="confirm-track-link" class="btn btn-primary" href="track-request.html?guest=1" data-i18n="guest.trackNow">Track this request</a>
             <button id="copy-reference" class="btn btn-outline" type="button" data-i18n="guest.copyReference">Copy reference</button>
-            <button id="copy-access-key" class="btn btn-outline" type="button" data-i18n="guest.copyKey">Copy private key</button>
-            <a id="confirm-track-link" class="btn btn-primary" href="track-request.html" data-i18n="guest.trackNow">Track this request</a>
+            <button id="copy-access-key" class="btn btn-outline" type="button" hidden data-i18n="guest.copyKey">Copy private key</button>
           </div>
           <p id="confirm-notice" class="form-notice" role="status"></p>
         </div>
@@ -179,15 +194,19 @@
   </main>
   <script src="../../assets/js/config.js?v=cfg2"></script>
   <script src="../../assets/js/utils/storage.js"></script>
-  <script src="../../assets/js/utils/geolocation.js?v=coord1"></script>
+  <script src="../../assets/js/utils/geolocation.js?v=coord2"></script>
   <script src="../../assets/js/utils/maps.js?v=map1"></script>
   <script src="../../assets/js/api/apiClient.js"></script>
-  <script src="../../assets/js/pages/locationFields.js?v=loc1"></script>
-  <script src="../../assets/js/pages/guestServiceLogic.js?v=match2"></script>
+  <script src="../../assets/js/pages/locationFields.js?v=loc3"></script>
+  <script src="../../assets/js/pages/locationDetect.js?v=loc5"></script>
+  <script src="../../assets/js/pages/radiusControl.js?v=rad1"></script>
+  <script src="../../assets/js/utils/images.js?v=real1"></script>
+  <script src="../../assets/js/pages/guestServiceLogic.js?v=pay2"></script>
+  <script src="../../assets/js/components/mockCheckout.js?v=pay1"></script>
   <script src="../../assets/js/components/otpUi.js"></script>
-  <script src="../../assets/js/i18n/messages.js?v=otp6"></script>
-  <script src="../../assets/js/i18n/i18n.js?v=lang1"></script>
-  <script src="../../assets/js/components/navbar.js?v=ux1"></script>
-  <script src="../../assets/js/pages/guestService.js?v=coord1"></script>
+  <script src="../../assets/js/i18n/messages.js?v=pay2"></script>
+  <script src="../../assets/js/i18n/i18n.js?v=mr1"></script>
+  <script src="../../assets/js/components/navbar.js?v=mr1"></script>
+  <script src="../../assets/js/pages/guestService.js?v=pay2"></script>
 </body>
 </html>

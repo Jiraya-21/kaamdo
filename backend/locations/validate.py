@@ -16,7 +16,7 @@ def official_district(value):
     text = clean_place_text(value, 'District', 100)
     official = normalize_district(text)
     if not official:
-        raise serializers.ValidationError('Choose an official Karnataka district.')
+        raise serializers.ValidationError('Choose an official Karnataka or Maharashtra district.')
     return official
 
 

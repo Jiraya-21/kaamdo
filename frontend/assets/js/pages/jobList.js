@@ -35,6 +35,7 @@ const JobList = {
     if (typeof LocationFields !== 'undefined') {
       await LocationFields.enhance({
         district: document.getElementById('job-district-input'),
+        selectedDistrict: '',
         onChange: () => this.load(),
       });
     }
@@ -132,9 +133,18 @@ const JobList = {
 
   card(job) {
     const card = document.createElement('article');
-    card.className = 'card';
-    card.style.padding = '20px';
-    card.style.marginBottom = '16px';
+    card.className = 'card listing-card';
+    const media = document.createElement('div');
+    media.className = 'listing-card-media';
+    const image = document.createElement('img');
+    image.src = typeof KaamdoImages !== 'undefined'
+      ? KaamdoImages.listing(this.detailKind === 'agricultural' ? 'farm' : 'job')
+      : '../../assets/images/listings/job.jpg';
+    image.alt = '';
+    image.loading = 'lazy';
+    media.appendChild(image);
+    const body = document.createElement('div');
+    body.className = 'listing-card-body';
     const title = document.createElement('h3');
     title.textContent = job.title;
     const place = document.createElement('p');
@@ -161,7 +171,8 @@ const JobList = {
       ? `job-details.html?kind=agricultural&id=${job.id}`
       : `job-details.html?id=${job.id}`;
     link.textContent = listText('list.viewJob');
-    card.append(title, place, wage, copy, link);
+    body.append(title, place, wage, copy, link);
+    card.append(media, body);
     return card;
   },
 };

@@ -63,7 +63,7 @@ const WorkerProfilePage = {
           : this.text('directory.availabilityUnknown'),
       categories: Array.isArray(row.service_categories) ? row.service_categories : [],
       photo: typeof ProviderStatusLogic === 'undefined'
-        ? '../../assets/images/placeholders/avatar-default.svg'
+        ? '../../assets/images/placeholders/avatar-default.jpg'
         : ProviderStatusLogic.photoSrc(row.photo_url),
       rateLabel: row.service_rate
         ? `${row.service_rate} ${row.pricing_basis || ''}`.trim()

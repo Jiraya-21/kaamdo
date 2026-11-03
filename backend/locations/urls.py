@@ -5,6 +5,7 @@ from .views import (
     LocationDistrictListView,
     LocationTalukListView,
     MapConfigView,
+    ReverseGeocodeView,
 )
 
 app_name = 'locations'
@@ -14,4 +15,5 @@ urlpatterns = [
     path('districts/', LocationDistrictListView.as_view(), name='districts'),
     path('taluks/', LocationTalukListView.as_view(), name='taluks'),
     path('map-config/', MapConfigView.as_view(), name='map-config'),
+    path('reverse/', ReverseGeocodeView.as_view(), name='reverse'),
 ]

@@ -20,6 +20,7 @@ from .models import (
     InquiryStatus,
     ListingStatus,
 )
+from .photos import public_equipment_photo_url, validate_equipment_photo
 
 
 def accepted_booking_overlaps(listing, start, end, exclude_pk=None):
@@ -48,6 +49,7 @@ def clean_text(value, label, max_length):
 class EquipmentListingSerializer(serializers.ModelSerializer):
     owner_name = serializers.SerializerMethodField()
     is_owner = serializers.SerializerMethodField()
+    photo_url = serializers.SerializerMethodField()
     taluk = serializers.CharField(required=False, allow_blank=True, max_length=120)
 
     class Meta:
@@ -63,6 +65,7 @@ class EquipmentListingSerializer(serializers.ModelSerializer):
             'rate',
             'operator_included',
             'availability_note',
+            'photo_url',
             'fee_status',
             'status',
             'owner_name',
@@ -70,7 +73,15 @@ class EquipmentListingSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'owner_name', 'is_owner', 'fee_status', 'created_at', 'updated_at']
+        read_only_fields = [
+            'id',
+            'owner_name',
+            'is_owner',
+            'photo_url',
+            'fee_status',
+            'created_at',
+            'updated_at',
+        ]
 
     def get_owner_name(self, obj):
         name = obj.owner.get_full_name().strip()
@@ -80,6 +91,17 @@ class EquipmentListingSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         return bool(user and user.is_authenticated and obj.owner_id == user.id)
+
+    def get_photo_url(self, obj):
+        return public_equipment_photo_url(obj, self.context.get('request'))
+
+
+class EquipmentListingPhotoSerializer(serializers.Serializer):
+    photo = serializers.ImageField(required=True)
+
+    def validate_photo(self, value):
+        validate_equipment_photo(value)
+        return value
 
     def validate_title(self, value):
         return clean_text(value, 'Title', 120)

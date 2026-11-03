@@ -61,6 +61,14 @@ const JobDetails = {
     const root = this.root();
     root.replaceChildren();
 
+    const photo = document.createElement('img');
+    photo.className = 'listing-detail-photo';
+    photo.src = typeof KaamdoImages !== 'undefined'
+      ? KaamdoImages.listing(this.kind === 'agricultural' ? 'farm' : 'job')
+      : '../../assets/images/listings/job.jpg';
+    photo.alt = '';
+    photo.setAttribute('aria-hidden', 'true');
+
     const title = document.createElement('h1');
     title.style.fontSize = '1.85rem';
     title.textContent = job.title;
@@ -107,7 +115,7 @@ const JobDetails = {
     form.append(label, input, button, notice);
     form.addEventListener('submit', (event) => this.apply(event, button, notice, input));
 
-    const blocks = [title, place, wage, poster, description];
+    const blocks = [photo, title, place, wage, poster, description];
     if (scheduleText) blocks.push(schedule);
     blocks.push(form);
     root.append(...blocks);

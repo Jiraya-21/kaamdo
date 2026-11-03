@@ -37,14 +37,15 @@ const WorkerDirectory = {
     const searchInput = document.getElementById('worker-search-input');
     const districtInput = document.getElementById('worker-district-input');
     if (searchInput) searchInput.value = preset.query;
+    const selectedDistrict = preset.district || '';
     if (typeof LocationFields !== 'undefined') {
       await LocationFields.enhance({
         district: districtInput,
-        selectedDistrict: preset.district,
+        selectedDistrict,
         onChange: () => this.load(),
       });
     }
-    if (districtInput && preset.district) districtInput.value = preset.district;
+    if (districtInput && selectedDistrict) districtInput.value = selectedDistrict;
     this.bindControls();
     await this.loadCategories();
     await this.load();
@@ -240,7 +241,7 @@ const WorkerDirectory = {
             alt="${escapeHtml(w.name)} - ${escapeHtml(w.primarySkill)}" 
             class="worker-card-photo"
             loading="lazy"
-            onerror="this.onerror=null; this.src='../../assets/images/placeholders/avatar-default.svg';"
+            onerror="this.onerror=null; this.src='../../assets/images/placeholders/avatar-default.jpg';"
           >
           
         </div>

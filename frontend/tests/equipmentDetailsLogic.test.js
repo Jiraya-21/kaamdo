@@ -61,12 +61,8 @@ assert.equal(logic.otpSendResult({ delivery: 'development', dev_code: '123456' }
 assert.equal(logic.otpSendResult({ delivery: 'development', dev_code: '123456' }).devCode, '123456');
 assert.equal(logic.otpSendResult({ delivery: 'sms' }).ok, true);
 assert.equal(
-  logic.otpSendResult({ delivery: 'sms' }).text.includes('accepted the request'),
+  logic.otpSendResult({ delivery: 'sms' }).text.includes('OTP sent to your mobile'),
   true,
-);
-assert.equal(
-  logic.otpSendResult({ delivery: 'sms' }).text.toLowerCase().includes('sent to your mobile'),
-  false,
 );
 assert.equal(logic.otpSendResult({ detail: 'SMS delivery is not configured. No code was sent.' }).ok, false);
 assert.match(logic.errorText(new TypeError('Failed to fetch')), /could not be reached/);

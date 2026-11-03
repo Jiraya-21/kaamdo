@@ -68,6 +68,7 @@ class CoordinateField(serializers.DecimalField):
 
 PUBLIC_FIELDS = [
     'id',
+    'kaamdo_worker_id',
     'display_name',
     'skills',
     'experience_years',
@@ -199,7 +200,14 @@ class WorkerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkerProfile
         fields = PUBLIC_FIELDS + ['publication_status', 'created_at', 'latitude', 'longitude']
-        read_only_fields = ['id', 'display_name', 'photo_url', 'created_at', 'updated_at']
+        read_only_fields = [
+            'id',
+            'kaamdo_worker_id',
+            'display_name',
+            'photo_url',
+            'created_at',
+            'updated_at',
+        ]
         extra_kwargs = {
             'experience_years': {'required': False},
             'service_radius_km': {'required': False},
@@ -253,23 +261,29 @@ class WorkerProfileSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        from .identity import ensure_kaamdo_worker_id
+
         skill_names = validated_data.pop('skills')
         categories = validated_data.pop('service_categories', [])
         validated_data.pop('taluk', None)
         profile = WorkerProfile(**validated_data)
         save_clean(profile)
+        ensure_kaamdo_worker_id(profile)
         profile.skills.set(resolve_skills(skill_names))
         profile.service_categories.set(categories)
         save_place(profile, profile.district, getattr(self, '_taluk', ''), profile.locality)
         return profile
 
     def update(self, instance, validated_data):
+        from .identity import ensure_kaamdo_worker_id
+
         skill_names = validated_data.pop('skills', None)
         categories = validated_data.pop('service_categories', None)
         validated_data.pop('taluk', None)
         for field, value in validated_data.items():
             setattr(instance, field, value)
         save_clean(instance)
+        ensure_kaamdo_worker_id(instance)
         if skill_names is not None:
             instance.skills.set(resolve_skills(skill_names))
         if categories is not None:
@@ -364,7 +378,7 @@ class GuestDailyServiceRequestSerializer(serializers.Serializer):
     description = serializers.CharField()
     latitude = CoordinateField()
     longitude = CoordinateField()
-    radius_km = serializers.IntegerField(required=False, min_value=8, max_value=50, default=15)
+    radius_km = serializers.IntegerField(required=False, min_value=5, max_value=100, default=60)
 
     def validate_guest_name(self, value):
         name = ' '.join(str(value).split())
@@ -406,13 +420,9 @@ class GuestDailyServiceRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError({
                 'detail': 'Choose a mobile number or an email address, not both.',
             })
-        if email:
-            if not guest_email_is_verified(email, OtpPurpose.SERVICE_REQUEST):
-                raise serializers.ValidationError({
-                    'contact_email': 'Verify this email address before creating a request.',
-                })
-            attrs['contact_phone'] = ''
-        elif phone:
+        # Mobile verification is required for real anti-fake booking flow.
+        # Email remains only as a local practice path when no phone is given.
+        if phone:
             if not PHONE_PATTERN.match(phone):
                 raise serializers.ValidationError({
                     'contact_phone': 'Enter a 10-digit Indian mobile number starting with 6, 7, 8, or 9.',
@@ -423,9 +433,15 @@ class GuestDailyServiceRequestSerializer(serializers.Serializer):
                 })
             attrs['contact_phone'] = phone
             attrs['contact_email'] = ''
+        elif email:
+            if not guest_email_is_verified(email, OtpPurpose.SERVICE_REQUEST):
+                raise serializers.ValidationError({
+                    'contact_email': 'Verify this email address before creating a request.',
+                })
+            attrs['contact_phone'] = ''
         else:
             raise serializers.ValidationError({
-                'detail': 'Enter a verified mobile number or email address.',
+                'detail': 'Verify a mobile number before booking. This stops fake requests.',
             })
         return attrs
 
@@ -483,6 +499,9 @@ class GuestDailyServiceRequestSerializer(serializers.Serializer):
                 consume_guest_email_verification(email, OtpPurpose.SERVICE_REQUEST)
             if phone:
                 consume_guest_phone_verification(phone, OtpPurpose.SERVICE_REQUEST)
+            # Verified contact only — next step is inspection fee, then workers.
+            from .services import prepare_inspection_payment
+            prepare_inspection_payment(record)
         self.access_key = raw_key
         return record
 
@@ -497,7 +516,7 @@ class CustomerDailyServiceRequestSerializer(serializers.Serializer):
     description = serializers.CharField()
     latitude = CoordinateField()
     longitude = CoordinateField()
-    radius_km = serializers.IntegerField(required=False, min_value=8, max_value=50, default=15)
+    radius_km = serializers.IntegerField(required=False, min_value=5, max_value=100, default=60)
 
     def validate_category(self, category):
         if not category.is_active:
@@ -524,9 +543,15 @@ class CustomerDailyServiceRequestSerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
+        user = self.context['request'].user
+        phone = str(getattr(user, 'phone_number', '') or '').strip()
+        if not phone:
+            raise serializers.ValidationError({
+                'detail': 'Add a verified mobile number on your account before booking. This stops fake requests.',
+            })
         record = DailyServiceRequest(
             category=validated_data['category'],
-            customer=self.context['request'].user,
+            customer=user,
             description=validated_data['description'],
             latitude=validated_data['latitude'],
             longitude=validated_data['longitude'],
@@ -540,6 +565,9 @@ class CustomerDailyServiceRequestSerializer(serializers.Serializer):
                 raise serializers.ValidationError(exc.message_dict) from exc
             raise serializers.ValidationError(exc.messages) from exc
         record.save()
+        # Account already has mobile — next step is inspection fee, then workers.
+        from .services import prepare_inspection_payment
+        prepare_inspection_payment(record)
         return record
 
     def update(self, instance, validated_data):

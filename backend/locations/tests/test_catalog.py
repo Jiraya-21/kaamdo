@@ -6,10 +6,13 @@ from locations.catalog import (
     catalog_payload,
     district_names,
     normalize_district,
+    normalize_state,
     normalize_taluk,
     place_label,
     taluk_names,
 )
+from locations.maharashtra import DISTRICT_RECORDS as MH_DISTRICT_RECORDS
+from locations.maharashtra import TALUKS_BY_DISTRICT as MH_TALUKS
 
 
 class KarnatakaCatalogTests(SimpleTestCase):
@@ -44,3 +47,25 @@ class KarnatakaCatalogTests(SimpleTestCase):
         for name, _aliases in DISTRICT_RECORDS:
             self.assertTrue(TALUKS_BY_DISTRICT[name])
         self.assertEqual(place_label('Town centre', 'Mandya', 'Mandya'), 'Town centre, Mandya')
+
+    def test_maharashtra_has_thirty_six_districts_and_pune_talukas(self):
+        names = [name for name, _aliases in MH_DISTRICT_RECORDS]
+        self.assertEqual(len(names), 36)
+        self.assertEqual(len(set(names)), 36)
+        self.assertEqual(normalize_state('MH'), 'Maharashtra')
+        self.assertEqual(normalize_district('Poona'), 'Pune')
+        self.assertEqual(normalize_district('Sambhajinagar'), 'Aurangabad')
+        self.assertEqual(normalize_taluk('Pune', 'Haveli'), 'Haveli')
+        self.assertEqual(normalize_taluk('Pune', 'Invented'), '')
+        self.assertEqual(taluk_names('Mumbai City'), [])
+        payload = catalog_payload()
+        self.assertEqual(len(payload['districts']), 31)
+        mh = next(row for row in payload['states'] if row['name'] == 'Maharashtra')
+        self.assertEqual(len(mh['districts']), 36)
+        pune = next(row for row in mh['districts'] if row['name'] == 'Pune')
+        self.assertIn('Haveli', pune['taluks'])
+        for name, _aliases in MH_DISTRICT_RECORDS:
+            if name == 'Mumbai City':
+                self.assertEqual(MH_TALUKS[name], ())
+            else:
+                self.assertTrue(MH_TALUKS[name])

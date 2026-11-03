@@ -94,7 +94,7 @@ const PostFormLogic = {
     else if (description.length > 2000) problems.push('Description must be 2000 characters or fewer.');
     if (!district) problems.push('District is required.');
     else if (district.length > 100) problems.push('District must be 100 characters or fewer.');
-    if (Object.hasOwn(values, 'taluk') && !this.clean(values.taluk)) {
+    if (Object.hasOwn(values, 'taluk') && !this.clean(values.taluk) && this.clean(values.district) !== 'Mumbai City') {
       problems.push('Taluk is required.');
     }
     if (!locality) problems.push('Locality is required.');
@@ -142,7 +142,7 @@ const PostFormLogic = {
     else if (description.length > 2000) problems.push('Description must be 2000 characters or fewer.');
     if (!district) problems.push('District is required.');
     else if (district.length > 100) problems.push('District must be 100 characters or fewer.');
-    if (Object.hasOwn(values, 'taluk') && !this.clean(values.taluk)) {
+    if (Object.hasOwn(values, 'taluk') && !this.clean(values.taluk) && this.clean(values.district) !== 'Mumbai City') {
       problems.push('Taluk is required.');
     }
     if (!locality) problems.push('Locality is required.');
@@ -197,10 +197,9 @@ const PostFormLogic = {
     }
     if (Array.isArray(data) && data.length) return String(data[0]);
     if (data && typeof data === 'object') {
-      const parts = Object.entries(data).map(([key, value]) => {
-        const text = Array.isArray(value) ? value.join(' ') : String(value);
-        return `${key}: ${text}`;
-      }).filter((part) => part.trim());
+      const parts = Object.entries(data).map(([, value]) => (
+        Array.isArray(value) ? value.join(' ') : String(value)
+      )).filter((part) => part && part !== '[object Object]');
       if (parts.length) return parts.join(' ');
     }
     if (error.status >= 500) return 'The server had a problem. Nothing was saved.';

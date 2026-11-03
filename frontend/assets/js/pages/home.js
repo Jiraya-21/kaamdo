@@ -6,6 +6,7 @@
 const HomePage = {
   init() {
     this.bindSearch();
+    this.setupTrackBar();
     this.loadCategories();
   },
 
@@ -17,6 +18,25 @@ const HomePage = {
       const query = document.getElementById('home-search-query').value.trim();
       window.location.href = HomeLogic.searchTarget(query);
     });
+  },
+
+  setupTrackBar() {
+    const account = document.getElementById('home-track-account');
+    const guest = document.getElementById('home-track-guest');
+    if (!account || !guest) return;
+    const token = typeof StorageUtil !== 'undefined' && typeof CONFIG !== 'undefined'
+      ? StorageUtil.get(CONFIG.STORAGE_KEYS.AUTH_TOKEN)
+      : '';
+    const signedIn = typeof token === 'string' && token.trim() !== '' && token !== 'demo_token_authenticated';
+    if (signedIn) {
+      account.href = 'pages/services/customer.html?view=track';
+      account.textContent = typeof I18n === 'undefined' ? 'My requests' : I18n.t('home.trackAccount');
+      guest.hidden = true;
+    } else {
+      account.href = 'pages/auth/login.html?next=customer';
+      account.textContent = typeof I18n === 'undefined' ? 'Log in to track' : I18n.t('home.trackLogin');
+      guest.hidden = false;
+    }
   },
 
   async loadCategories() {
@@ -55,8 +75,12 @@ const HomePage = {
       const body = document.createElement('div');
       body.className = 'worker-card-body';
       const image = document.createElement('img');
-      image.src = 'assets/images/services/service.svg';
+      image.className = 'worker-card-photo';
+      image.src = typeof KaamdoImages !== 'undefined'
+        ? KaamdoImages.category(card.slug)
+        : 'assets/images/services/service.jpg';
       image.alt = typeof I18n === 'undefined' ? card.name : I18n.categoryLabel(card.slug, card.name);
+      image.loading = 'lazy';
       image.width = 160;
       image.height = 100;
       const title = document.createElement('h3');

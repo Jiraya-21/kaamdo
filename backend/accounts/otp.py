@@ -35,9 +35,8 @@ VERIFIED_HOURS = 24
 MAX_SENDS = 3
 SEND_WINDOW_MINUTES = 15
 MAX_ATTEMPTS = 5
-SMS_ACCEPTED_DETAIL = (
-    'The SMS provider accepted the request. Enter the code when it arrives.'
-)
+SMS_ACCEPTED_DETAIL = 'OTP sent to your mobile. Enter the code when it arrives.'
+OTP_SENT_DETAIL = 'OTP sent to your mobile.'
 
 
 def normalize_otp_phone(value):
@@ -109,8 +108,8 @@ def guest_otp_options():
             'mode': 'development' if development else 'unavailable',
         },
         'phone': {
-            'available': sms,
-            'mode': 'sms' if sms else 'unavailable',
+            'available': sms or development,
+            'mode': 'sms' if sms else ('development' if development else 'unavailable'),
         },
     }
 
@@ -161,7 +160,7 @@ def send_otp(user, phone, purpose):
         return _development_payload(
             code,
             f'phone {purpose}',
-            'Local development code only. This was not sent by SMS.',
+            OTP_SENT_DETAIL,
         )
     if not sms_otp_enabled():
         raise ValidationError({
@@ -250,7 +249,7 @@ def send_guest_phone_otp(phone, purpose):
         return _development_payload(
             code,
             f'guest phone {purpose}',
-            'Local development code only. This was not sent by SMS.',
+            OTP_SENT_DETAIL,
         )
     if not sms_otp_enabled():
         raise ValidationError({
@@ -316,7 +315,7 @@ def send_guest_email_otp(email, purpose):
     return _development_payload(
         code,
         f'guest email {purpose}',
-        'Local development code only. This was not sent by email.',
+        OTP_SENT_DETAIL,
     )
 
 

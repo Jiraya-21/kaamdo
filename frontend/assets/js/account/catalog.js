@@ -1,9 +1,61 @@
 /**
- * Account areas shown after the server confirms a capability.
- * The page address is not permission. AccountSession checks /auth/me/ first.
+ * Account destinations and professional roles.
+ * Customer is not a professional role. Marketplace links are for every signed-in user.
+ * Role workspaces still require the matching capability from /auth/me/.
  */
 
 const AccountCatalog = {
+  /**
+   * Marketplace destinations open to every signed-in account.
+   * Daily Services goes to the authenticated request/track page (no Customer role).
+   */
+  marketplaces: [
+    {
+      id: 'daily',
+      labelKey: 'hub.needDaily',
+      label: 'Helper today',
+      href: '../services/customer.html',
+      summaryKey: 'hub.marketDaily',
+      summary: 'Plumber, electrician, and other daily work.',
+    },
+    {
+      id: 'jobs',
+      labelKey: 'hub.needJobs',
+      label: 'Jobs',
+      href: '../jobs/jobs-list.html',
+      summaryKey: 'hub.marketJobs',
+      summary: 'See jobs near your place.',
+    },
+    {
+      id: 'equipment',
+      labelKey: 'hub.needEquipment',
+      label: 'Machines',
+      href: '../equipment/equipment-list.html',
+      summaryKey: 'hub.marketEquipment',
+      summary: 'Tractor and other machines.',
+    },
+    {
+      id: 'farm',
+      labelKey: 'hub.needFarm',
+      label: 'Farm work',
+      href: '../jobs/farm-jobs.html',
+      summaryKey: 'hub.marketFarm',
+      summary: 'Farm hiring near you.',
+    },
+  ],
+
+  /** Kept for AreaPage: signed-in Daily Services request/track page. */
+  activities: [
+    {
+      id: 'service_requests',
+      labelKey: 'activity.serviceRequests',
+      summaryKey: 'activity.serviceRequestsSummary',
+      label: 'My service requests',
+      page: 'services/customer.html',
+      summary: 'Request a daily service and read its status. A worker is assigned only after one accepts.',
+    },
+  ],
+
   groups: [
     {
       id: 'services',
@@ -11,22 +63,14 @@ const AccountCatalog = {
       title: 'Daily services',
       items: [
         {
-          code: 'customer',
-          labelKey: 'role.customer',
-          summaryKey: 'role.customerSummary',
-          label: 'Customer',
-          page: 'services/customer.html',
-          summary: 'Request a daily service by category and read its status. A worker is assigned only after one accepts.'
-        },
-        {
           code: 'service_provider',
           labelKey: 'role.provider',
           summaryKey: 'role.providerSummary',
-          label: 'Service provider',
+          label: 'Daily service provider',
           page: 'services/provider.html',
-          summary: 'Manage your professional profile, verification, and service requests.'
-        }
-      ]
+          summary: 'Daily services. Manage profile, verification, and work offers.',
+        },
+      ],
     },
     {
       id: 'jobs',
@@ -39,7 +83,7 @@ const AccountCatalog = {
           summaryKey: 'role.seekerSummary',
           label: 'Job seeker',
           page: 'jobs/seeker.html',
-          summary: 'Search jobs, apply, and track applications.'
+          summary: 'Search jobs, apply, and track applications.',
         },
         {
           code: 'employer',
@@ -47,9 +91,9 @@ const AccountCatalog = {
           summaryKey: 'role.employerSummary',
           label: 'Employer',
           page: 'jobs/employer.html',
-          summary: 'Publish jobs and accept or reject submitted applications.'
-        }
-      ]
+          summary: 'Publish jobs and accept or reject submitted applications.',
+        },
+      ],
     },
     {
       id: 'equipment',
@@ -62,7 +106,7 @@ const AccountCatalog = {
           summaryKey: 'role.eqOwnerSummary',
           label: 'Equipment owner',
           page: 'equipment/rental.html',
-          summary: 'List machinery, set a rental price, and handle rental requests.'
+          summary: 'List machinery, set a rental price, and handle rental requests.',
         },
         {
           code: 'equipment_renter',
@@ -70,9 +114,9 @@ const AccountCatalog = {
           summaryKey: 'role.eqRenterSummary',
           label: 'Equipment renter',
           page: 'equipment/rental.html',
-          summary: 'Browse equipment and request rentals.'
-        }
-      ]
+          summary: 'Browse equipment and request rentals.',
+        },
+      ],
     },
     {
       id: 'farm',
@@ -85,7 +129,7 @@ const AccountCatalog = {
           summaryKey: 'role.agWorkerSummary',
           label: 'Agricultural worker',
           page: 'agriculture/hiring.html',
-          summary: 'Find farm work and respond to hiring requests.'
+          summary: 'Find farm work and respond to hiring requests.',
         },
         {
           code: 'agricultural_employer',
@@ -93,15 +137,29 @@ const AccountCatalog = {
           summaryKey: 'role.agEmployerSummary',
           label: 'Agricultural job poster',
           page: 'agriculture/hiring.html',
-          summary: 'Hire farm labour and manage agricultural jobs.'
-        }
-      ]
-    }
+          summary: 'Hire farm labour and manage agricultural jobs.',
+        },
+      ],
+    },
   ],
 
   text(key, fallback) {
     if (typeof I18n === 'undefined') return fallback || key;
-    return I18n.t(key);
+    const value = I18n.t(key);
+    return value === key && fallback ? fallback : value;
+  },
+
+  activityForPage(page) {
+    return (this.activities || []).find((item) => item.page === page) || null;
+  },
+
+  activityHref(item) {
+    if (!item || !item.page) return '../dashboard/dashboard.html';
+    return `../${item.page}`;
+  },
+
+  marketplaceHref(item) {
+    return item && item.href ? item.href : '../dashboard/dashboard.html';
   },
 
   workspaceHref(item) {
@@ -139,5 +197,5 @@ const AccountCatalog = {
   label(code) {
     const item = this.allItems().find((entry) => entry.code === code);
     return item ? this.itemLabel(item) : code;
-  }
+  },
 };

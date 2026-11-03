@@ -6,7 +6,7 @@
 const WorkerDirectoryLogic = {
   LIST_PATH: '/workers/',
   CATEGORY_PATH: '/workers/categories/',
-  DEFAULT_AVATAR: '../../assets/images/placeholders/avatar-default.svg',
+  DEFAULT_AVATAR: '../../assets/images/placeholders/avatar-default.jpg',
 
   photoSrc(photoUrl) {
     const value = String(photoUrl == null ? '' : photoUrl).trim();

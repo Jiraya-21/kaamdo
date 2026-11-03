@@ -8,6 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const errorEl = document.getElementById('login-error');
   if (!form || !errorEl) return;
 
+  const next = new URLSearchParams(window.location.search).get('next');
+  if (next === 'customer') {
+    try {
+      sessionStorage.setItem('kaamdo_after_login', '/pages/services/customer.html?view=track');
+    } catch (storageError) { /* ignore */ }
+  }
+
   if (new URLSearchParams(window.location.search).get('notice') === 'offline-logout') {
     errorEl.textContent = typeof I18n === 'undefined'
       ? 'You are signed out in this browser. The server could not be reached, so sign in and log out again when the connection works if this is a shared computer.'

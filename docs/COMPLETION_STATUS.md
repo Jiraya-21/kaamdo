@@ -1,43 +1,56 @@
 # KaamDo completion status
 
-Updated 27 October 2026 (final acceptance). Full evidence: `docs/PRE_RELEASE_CHECKLIST.md`.
+Updated 3 November 2026 — deployment-ready first phase pushed to GitHub. Living notes: `docs/KAAMDO_PROJECT_CONTEXT.md`.
 
 ## Verdict
 
 | Target | Status |
 | --- | --- |
 | Local development (127.0.0.1) | **PASS** |
-| Controlled staging | **FAIL** |
-| Public production | **FAIL** |
+| GitHub backup / source | **PASS** (pushed to `origin/main`) |
+| Controlled staging (Render / host) | **READY TO START** — create host + env yourself |
+| Public production | **NOT LIVE** until host env is set with `DEBUG=False` |
 
-Local **PASS** means the matching engine and automated/isolated checks work on loopback. It does **not** mean signed-in browser matching was completed, SMS is safe on a reachable host, or the product is ready to charge money or go public.
+## First-phase product (this push)
 
-## What was proven this pass
+- **Book**: mobile verify → pay inspection fee → workers offered
+- **Track (account)**: My requests = existing status only (or “No request”)
+- **Track (guest)**: same verified mobile + OTP → all requests for that number
+- **Roles**: customer shows nothing; providers show section tags (e.g. Daily services · Electrician)
+- **Copy**: deployment-style OTP / pay / accept-decline messages (no TEST MODE / practice banners in UI)
+- **Brand / photos**: logo + real JPEGs; Bidar soft testing notice; districts open
 
-- Live `backend/db.sqlite3` hash `868a73bd2496bb9ed8660d653413d5d90583133cc0337b8647e755233f18e8e7` / 536576 bytes **unchanged**.
-- Isolated copy: existing rows readable; matching fields work; full lifecycle **PASS**.
-- SQLite parallel accept: one winner. PostgreSQL **BLOCKED**.
-- `process_daily_matching` and isolated `run_matching_loop --interval 15` **PASS**. Stop = no expiry. Restart = immediate pulse.
-- Suites: **221** backend, **25** frontend, `check` clean, `--deploy` 6 warnings, `makemigrations --check` clean.
-- Isolated signed-in APIs: availability, expand, cancel, accept, photo, job close (verified phone), equipment booking.
-- Signed-in **browser** matching, 390px layouts: **NOT TESTED**.
-- Live SMS is on. Isolated SMS is off. No test messages. Acceptance ≠ delivery.
+## Production safety (already in code)
 
-## How matching runs locally
+- `DEBUG=False` forces `KAAMDO_VISIT_PAYMENT=unconfigured` and OTP delivery unconfigured unless you set SMS
+- `.env` is gitignored — only `.env.example` is tracked
+- Public frontend uses same-origin `/api/v1` unless `window.KAAMDO_API_BASE` is set
+
+## What you must set on the host (not in git)
+
+1. `DEBUG=False`
+2. Long unique `SECRET_KEY` (50+ chars; not `django-insecure-*`)
+3. `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`
+4. PostgreSQL (`DB_ENGINE=postgresql` + credentials)
+5. `KAAMDO_VISIT_PAYMENT=unconfigured`
+6. SMS only if you intentionally enable SMSMobileAPI for live OTP
+7. Run migrations + seed locations; schedule `process_daily_matching` (paid cron on Render)
+
+See `docs/DEPLOYMENT_GUIDE.md` and `deploy/render.example.yaml`.
+
+## Remaining product gaps (not blockers for staging)
+
+1. Real money payments (Razorpay live) not wired — mock/local only while DEBUG
+2. Reviews app still pending
+3. Free Render cannot run a reliable matching cron — use paid cron or external scheduler
+
+## Start locally (Windows)
 
 ```powershell
+cd "D:\project  kaam-do\Kaamdo.1"
+.\venv\Scripts\Activate.ps1
 cd backend
-..\venv\Scripts\python.exe manage.py process_daily_matching
-# or, while you watch it:
-..\venv\Scripts\python.exe manage.py run_matching_loop --interval 15
+python manage.py runserver
 ```
 
-Distance is a straight-line estimate. Do not promise road time or a travel fee. Customer pages do not refresh themselves.
-
-## Your next actions
-
-1. Keep the API on loopback, or turn SMS off (`KAAMDO_OTP_DELIVERY=unconfigured`) if others can reach this machine.
-2. Schedule `process_daily_matching` if you want expiry without waiting for a decline.
-3. Sign in and walk matching, expand, cancel, availability, photo, job close, and equipment yourself. Employer close needs a verified mobile. Use a real photo file.
-4. Do not enable payments or deploy publicly.
-5. PostgreSQL is required before treating simultaneous accept as proven.
+Serve `frontend/` with Live Server. Keep local `.env` with `DEBUG=True` and optional `KAAMDO_VISIT_PAYMENT=mock_demo`.

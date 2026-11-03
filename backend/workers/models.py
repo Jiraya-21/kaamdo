@@ -138,6 +138,13 @@ class WorkerProfile(models.Model):
         validators=[validate_worker_photo],
         help_text='Optional public profile photo. JPEG, PNG, or WebP. Maximum 2 MB.',
     )
+    kaamdo_worker_id = models.CharField(
+        max_length=16,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text='Permanent public KaamDo Worker ID. Assigned once; never reuse across people.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -148,6 +155,7 @@ class WorkerProfile(models.Model):
         indexes = [
             models.Index(fields=['publication_status'], name='workers_profile_status_idx'),
             models.Index(fields=['district'], name='workers_profile_district_idx'),
+            models.Index(fields=['kaamdo_worker_id'], name='workers_profile_worker_id_idx'),
         ]
         constraints = [
             models.CheckConstraint(
@@ -392,9 +400,9 @@ class DailyServiceRequest(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
     radius_km = models.PositiveSmallIntegerField(
-        default=15,
-        validators=[MinValueValidator(8), MaxValueValidator(50)],
-        help_text='Kilometres chosen by the customer, from 8 to 50. This is not the worker travel limit.',
+        default=60,
+        validators=[MinValueValidator(5), MaxValueValidator(100)],
+        help_text='Kilometres chosen by the customer, from 5 to 100. Matching still expands 8, 15, then 20 km up to this cap.',
     )
     search_radius_km = models.PositiveSmallIntegerField(
         null=True,
@@ -416,6 +424,11 @@ class DailyServiceRequest(models.Model):
         blank=True,
         related_name='assigned_daily_requests',
     )
+    arrival_verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Set only after the request owner confirms the booking arrival code.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     objects = DailyServiceRequestManager()
@@ -428,7 +441,7 @@ class DailyServiceRequest(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(radius_km__gte=8) & models.Q(radius_km__lte=50),
+                condition=models.Q(radius_km__gte=5) & models.Q(radius_km__lte=100),
                 name='workers_daily_radius_chk',
             ),
         ]
@@ -521,13 +534,133 @@ class DailyServiceRequest(models.Model):
         allowed = self.TRANSITIONS.get(self.status, set())
         if new_status not in allowed:
             raise ValidationError({'status': f'A {self.status} request cannot move to {new_status}.'})
+        previous_profile = self.assigned_profile
+        previous_status = self.status
         if new_status == self.Status.ASSIGNED and assigned_profile is not None:
             self.assigned_profile = assigned_profile
+            # Replacement or first assignment: previous arrival proof does not carry over.
+            self.arrival_verified_at = None
         if new_status == self.Status.OFFERING and self.status == self.Status.WORKER_CANCELLED:
             self.assigned_profile = None
+            self.arrival_verified_at = None
+        if new_status == self.Status.WORKER_CANCELLED:
+            self.arrival_verified_at = None
         self.status = new_status
         self.full_clean()
         self.save()
+        self._record_assignment_transition(
+            previous_status=previous_status,
+            previous_profile=previous_profile,
+            new_status=new_status,
+        )
+
+    def _record_assignment_transition(self, *, previous_status, previous_profile, new_status):
+        """Audit assignment, replacement, and clear open arrival codes when the worker changes."""
+        from .arrival import invalidate_open_arrival_challenges, record_assignment_event
+
+        if new_status == self.Status.ASSIGNED and self.assigned_profile_id:
+            previous_id = previous_profile.pk if previous_profile is not None else None
+            if previous_id and previous_id != self.assigned_profile_id:
+                record_assignment_event(
+                    self,
+                    previous_profile,
+                    DailyServiceAssignmentEvent.Event.REPLACED,
+                    note='Assigned worker replaced; customer must verify the new worker.',
+                )
+                invalidate_open_arrival_challenges(self)
+            record_assignment_event(
+                self,
+                self.assigned_profile,
+                DailyServiceAssignmentEvent.Event.ASSIGNED,
+                note='Worker accepted and was assigned to this request.',
+            )
+            return
+        if new_status == self.Status.WORKER_CANCELLED and previous_profile is not None:
+            record_assignment_event(
+                self,
+                previous_profile,
+                DailyServiceAssignmentEvent.Event.WORKER_CANCELLED,
+                note='Assigned worker cancelled before the visit.',
+            )
+            invalidate_open_arrival_challenges(self)
+            return
+        if (
+            new_status == self.Status.OFFERING
+            and previous_status == self.Status.WORKER_CANCELLED
+        ):
+            invalidate_open_arrival_challenges(self)
+
+
+class DailyServiceAssignmentEvent(models.Model):
+    """Auditable history of who was assigned, replaced, verified, or completed a request."""
+
+    class Event(models.TextChoices):
+        ASSIGNED = 'assigned', 'Assigned'
+        REPLACED = 'replaced', 'Replaced'
+        WORKER_CANCELLED = 'worker_cancelled', 'Worker cancelled'
+        ARRIVAL_SIGNALLED = 'arrival_signalled', 'Arrival signalled'
+        ARRIVAL_VERIFIED = 'arrival_verified', 'Arrival verified'
+        COMPLETED = 'completed', 'Completed'
+
+    request = models.ForeignKey(
+        DailyServiceRequest,
+        on_delete=models.CASCADE,
+        related_name='assignment_events',
+    )
+    profile = models.ForeignKey(
+        WorkerProfile,
+        on_delete=models.PROTECT,
+        related_name='assignment_events',
+    )
+    event = models.CharField(max_length=32, choices=Event.choices)
+    note = models.CharField(max_length=240, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['request', 'created_at'], name='workers_assign_evt_req_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.request_id}:{self.event}:{self.profile_id}'
+
+
+class DailyServiceArrivalChallenge(models.Model):
+    """Booking-specific arrival code. Separate from login and guest OTP."""
+
+    request = models.ForeignKey(
+        DailyServiceRequest,
+        on_delete=models.CASCADE,
+        related_name='arrival_challenges',
+    )
+    assigned_profile = models.ForeignKey(
+        WorkerProfile,
+        on_delete=models.PROTECT,
+        related_name='arrival_challenges',
+    )
+    code_hash = models.CharField(max_length=128)
+    expires_at = models.DateTimeField()
+    attempt_count = models.PositiveSmallIntegerField(default=0)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    verified_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='verified_arrivals',
+    )
+    superseded_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['request', 'created_at'], name='workers_arrival_req_idx'),
+        ]
+
+    def __str__(self):
+        return f'Arrival challenge {self.pk} for request {self.request_id}'
 
 
 class ServiceOfferQuerySet(models.QuerySet):
@@ -748,6 +881,88 @@ class VisitPayment(models.Model):
         self.state = new_state
         self.full_clean()
         self.save()
+
+
+class ServicePriceMenuItem(models.Model):
+    """Company price menu: fixed inspection fee label + extra work items workers may add."""
+
+    class Kind(models.TextChoices):
+        INSPECTION = 'inspection', 'Inspection fee'
+        EXTRA = 'extra', 'Extra work'
+
+    code = models.SlugField(max_length=64, unique=True)
+    title = models.CharField(max_length=120)
+    description = models.CharField(max_length=240, blank=True)
+    amount_inr = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
+    kind = models.CharField(max_length=16, choices=Kind.choices, default=Kind.EXTRA)
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveSmallIntegerField(default=100)
+
+    class Meta:
+        ordering = ['sort_order', 'title']
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount_inr__gt=0),
+                name='workers_price_menu_amount_chk',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.title} ({self.amount_inr} INR)'
+
+
+class RequestExtraCharge(models.Model):
+    """Extra work line proposed after inspection. Mock paid is not money received."""
+
+    class State(models.TextChoices):
+        PROPOSED = 'proposed', 'Proposed'
+        MOCK_PAID = 'mock_paid', 'Mock paid (not money received)'
+        CANCELLED = 'cancelled', 'Cancelled'
+
+    request = models.ForeignKey(
+        DailyServiceRequest,
+        on_delete=models.CASCADE,
+        related_name='extra_charges',
+    )
+    menu_item = models.ForeignKey(
+        ServicePriceMenuItem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='extra_charges',
+    )
+    title = models.CharField(max_length=120)
+    amount_inr = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
+    state = models.CharField(max_length=16, choices=State.choices, default=State.PROPOSED)
+    proposed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='proposed_extra_charges',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['created_at']
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount_inr__gt=0),
+                name='workers_extra_charge_amount_chk',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.title} ({self.state})'
 
 
 @receiver(post_delete, sender=WorkerProfile)

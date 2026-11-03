@@ -35,7 +35,7 @@ const GeolocationUtil = {
         (error) => {
           reject(error);
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     });
   }

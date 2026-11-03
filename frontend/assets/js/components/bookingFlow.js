@@ -45,11 +45,11 @@ const BookingFlow = {
           </form>
 
           <div id="request-otp-pane" style="display:none;">
-            <p class="text-muted" style="font-size:0.875rem;" data-i18n="booking.otpLead">Enter the 6-digit code for the mobile number on your account. A code appears here only for local practice delivery.</p>
+            <p class="text-muted" style="font-size:0.875rem;" data-i18n="booking.otpLead">Enter the 6-digit OTP sent to the mobile number on your account.</p>
             <p id="request-dev-code" style="display:none; background:#FEF3C7; border:1px dashed #D97706; border-radius:8px; padding:10px; margin:12px 0; font-size:0.85rem; color:#92400E;"></p>
             <input id="request-otp-code" class="form-input" inputmode="numeric" maxlength="6" autocomplete="one-time-code" data-i18n-placeholder="guest.code" placeholder="6-digit code">
             <button id="request-otp-verify" type="button" class="btn btn-primary btn-block" style="margin-top:12px;" data-i18n="booking.verify">Check code and send request</button>
-            <button id="request-otp-resend" type="button" class="btn btn-outline btn-block" style="margin-top:8px;" data-i18n="booking.resend">Ask for another practice code</button>
+            <button id="request-otp-resend" type="button" class="btn btn-outline btn-block" style="margin-top:8px;" data-i18n="booking.resend">Send OTP again</button>
           </div>
 
           <div id="request-success-pane" style="display:none;">

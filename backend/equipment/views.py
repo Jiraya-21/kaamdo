@@ -8,6 +8,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -23,7 +24,13 @@ from .models import (
     PricingBasis,
 )
 from .permissions import IsCustomer, IsEquipmentOwner, IsEquipmentRenter
-from .serializers import EquipmentBookingSerializer, EquipmentInquirySerializer, EquipmentListingSerializer
+from .photos import clear_equipment_photo, replace_equipment_photo
+from .serializers import (
+    EquipmentBookingSerializer,
+    EquipmentInquirySerializer,
+    EquipmentListingPhotoSerializer,
+    EquipmentListingSerializer,
+)
 
 
 def public_listings():
@@ -314,3 +321,37 @@ class EquipmentInquiryDetailView(APIView):
             serializer.instance,
             context={'request': request, 'listing': inquiry.listing},
         ).data)
+
+
+class EquipmentListingPhotoView(APIView):
+    """Owner-only listing photo replace or remove."""
+
+    permission_classes = [IsAuthenticated, IsEquipmentOwner]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get_listing(self, request, pk):
+        listing = get_object_or_404(EquipmentListing, pk=pk)
+        if listing.owner_id != request.user.id:
+            raise Http404()
+        return listing
+
+    def serialized(self, listing, request):
+        return EquipmentListingSerializer(listing, context={'request': request}).data
+
+    def post(self, request, pk):
+        listing = self.get_listing(request, pk)
+        serializer = EquipmentListingPhotoSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            replace_equipment_photo(listing, serializer.validated_data['photo'])
+        except DjangoValidationError as exc:
+            detail = exc.messages[0] if getattr(exc, 'messages', None) else 'Could not save the photo.'
+            return Response({'detail': detail}, status=status.HTTP_400_BAD_REQUEST)
+        listing.refresh_from_db()
+        return Response(self.serialized(listing, request))
+
+    def delete(self, request, pk):
+        listing = self.get_listing(request, pk)
+        clear_equipment_photo(listing)
+        listing.refresh_from_db()
+        return Response(self.serialized(listing, request))

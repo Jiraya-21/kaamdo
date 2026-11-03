@@ -27,16 +27,30 @@ from .services import (
     customer_daily_request_payload,
     customer_daily_requests,
     describe_guest_request,
+    guest_track_payload,
+    list_requests_for_verified_phone,
+    resolve_guest_owned_request,
     TEST_PAYMENT_LABEL,
     mock_visit_payment_enabled,
+    payment_snapshot,
+    price_menu_payload,
+    propose_request_extras,
     provider_daily_offers,
     provider_offer_payload,
     public_worker_directory,
     published_worker_profiles,
+    offer_workers_after_inspection_fee,
+    record_mock_extra_payment,
     record_mock_visit_progress,
     respond_to_service_offer,
+    user_may_mock_pay_request,
 )
-from .permissions import IsCustomer, IsServiceProvider
+from .arrival import (
+    customer_confirms_completion,
+    customer_verifies_arrival,
+    provider_signals_arrival,
+)
+from .permissions import IsMarketplaceUser, IsServiceProvider
 from .photos import (
     PHOTO_MIGRATION_REQUIRED,
     clear_worker_photo,
@@ -58,16 +72,8 @@ def published_profiles():
     return published_worker_profiles()
 
 
-def owned_guest_request(reference, access_key):
-    describe_guest_request(reference, access_key)
-    try:
-        pk = int(reference)
-    except (TypeError, ValueError):
-        raise DailyServiceRequest.DoesNotExist
-    record = DailyServiceRequest.objects.filter(pk=pk).first()
-    if record is None or not record.check_access_key(access_key):
-        raise DailyServiceRequest.DoesNotExist
-    return record
+def owned_guest_request(reference, access_key='', phone=''):
+    return resolve_guest_owned_request(reference, access_key=access_key or '', phone=phone or '')
 
 
 class ServiceCategoryListView(generics.ListAPIView):
@@ -89,36 +95,76 @@ class GuestDailyServiceRequestCreateView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         record = serializer.save()
+        from .services import payment_snapshot
         return Response(
             {
-                'detail': 'Daily service request created.',
+                'detail': (
+                    'Mobile verified. Pay the inspection fee next. '
+                    'Workers are offered only after that fee is recorded.'
+                ),
                 'reference': record.pk,
                 'status': record.status,
                 'radius_km': record.radius_km,
                 'access_key': serializer.access_key,
+                'payment': payment_snapshot(record),
+                'next_step': 'pay_inspection_fee',
             },
             status=status.HTTP_201_CREATED,
         )
 
 
 class GuestDailyServiceRequestStatusView(APIView):
-    """A guest reads one request by presenting the access key issued at creation."""
+    """Read one request by access key (legacy) or by verified mobile + reference."""
 
     authentication_classes = [TokenAuthentication]
     permission_classes = [AllowAny]
 
     def post(self, request):
+        access_key = request.data.get('access_key') or ''
+        phone = request.data.get('phone_number') or ''
         try:
-            payload = describe_guest_request(
-                request.data.get('reference'),
-                request.data.get('access_key'),
-            )
+            if access_key:
+                payload = describe_guest_request(
+                    request.data.get('reference'),
+                    access_key,
+                    request=request,
+                )
+            else:
+                record = resolve_guest_owned_request(
+                    request.data.get('reference'),
+                    phone=phone,
+                )
+                payload = guest_track_payload(record, request=request)
         except DailyServiceRequest.DoesNotExist:
             return Response(
                 {'detail': 'Daily service request not found.'},
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(payload)
+
+
+class GuestDailyServiceRequestByPhoneView(APIView):
+    """List every request tied to a mobile number after that number was OTP-verified."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            rows = list_requests_for_verified_phone(
+                request.data.get('phone_number'),
+                request=request,
+            )
+        except DjangoValidationError as exc:
+            if getattr(exc, 'message_dict', None):
+                return Response(exc.message_dict, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': exc.messages}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            'detail': 'Requests for this mobile number.',
+            'phone_number': str(request.data.get('phone_number') or '').strip(),
+            'count': len(rows),
+            'requests': rows,
+        })
 
 
 class DailyServiceMatchView(APIView):
@@ -191,7 +237,11 @@ class DailyServiceExpandView(APIView):
                 return None
             return DailyServiceRequest.objects.filter(pk=pk, customer=request.user).first()
         try:
-            return owned_guest_request(request.data.get('reference'), request.data.get('access_key'))
+            return owned_guest_request(
+                request.data.get('reference'),
+                access_key=request.data.get('access_key') or '',
+                phone=request.data.get('phone_number') or '',
+            )
         except DailyServiceRequest.DoesNotExist:
             return None
 
@@ -219,22 +269,38 @@ class DailyServiceCancelView(APIView):
         })
 
 
-class MockVisitPaymentView(APIView):
-    """Staff record a local mock payment. This does not receive money."""
+class PriceMenuView(APIView):
+    """Public company price menu: inspection fee + extras."""
 
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        return Response(price_menu_payload())
+
+
+class MockVisitPaymentView(APIView):
+    """Mock Razorpay-style inspection payment. Does not receive money."""
+
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
+        record = DailyServiceRequest.objects.filter(pk=pk).first()
+        if record is None:
+            return Response({'detail': 'Daily service request not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not user_may_mock_pay_request(request.user, record):
+            return Response(
+                {'detail': 'Only the request owner or staff can record this mock payment.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         if not mock_visit_payment_enabled():
             return Response(
                 {'detail': 'Mock visit payment is not enabled. No payment was recorded.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        record = DailyServiceRequest.objects.filter(pk=pk).first()
-        if record is None:
-            return Response({'detail': 'Daily service request not found.'}, status=status.HTTP_404_NOT_FOUND)
         try:
             record, payment = record_mock_visit_progress(record)
+            record = offer_workers_after_inspection_fee(record)
         except DjangoValidationError as exc:
             if getattr(exc, 'message_dict', None):
                 return Response(exc.message_dict, status=status.HTTP_400_BAD_REQUEST)
@@ -243,14 +309,169 @@ class MockVisitPaymentView(APIView):
             {
                 'detail': TEST_PAYMENT_LABEL,
                 'test_mode': True,
+                'provider': 'razorpay_mock',
                 'money_received': False,
                 'reference': record.pk,
                 'status': record.status,
                 'payment_state': payment.state,
                 'verification_source': payment.verification_source,
                 'amount_inr': format(payment.amount_inr, 'f'),
+                'payment': payment_snapshot(record),
+                'next_step': 'workers_offered',
             }
         )
+
+
+class GuestMockVisitPaymentView(APIView):
+    """Guest mock inspection payment with access key or verified mobile + reference."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        if not mock_visit_payment_enabled():
+            return Response(
+                {'detail': 'Mock visit payment is not enabled. No payment was recorded.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            record = resolve_guest_owned_request(
+                request.data.get('reference'),
+                access_key=request.data.get('access_key') or '',
+                phone=request.data.get('phone_number') or '',
+            )
+        except DailyServiceRequest.DoesNotExist:
+            return Response(
+                {'detail': 'Request not found for that mobile number or key.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        try:
+            record, payment = record_mock_visit_progress(record)
+            record = offer_workers_after_inspection_fee(record)
+        except DjangoValidationError as exc:
+            if getattr(exc, 'message_dict', None):
+                return Response(exc.message_dict, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': exc.messages}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {
+                'detail': TEST_PAYMENT_LABEL,
+                'test_mode': True,
+                'provider': 'razorpay_mock',
+                'money_received': False,
+                'reference': record.pk,
+                'status': record.status,
+                'payment_state': payment.state,
+                'amount_inr': format(payment.amount_inr, 'f'),
+                'payment': payment_snapshot(record),
+                'next_step': 'workers_offered',
+            }
+        )
+
+
+class ProposeRequestExtrasView(APIView):
+    """Assigned worker adds company-menu extras after inspection."""
+
+    permission_classes = [IsAuthenticated, IsServiceProvider]
+
+    def post(self, request, pk):
+        record = DailyServiceRequest.objects.filter(pk=pk).first()
+        if record is None:
+            return Response({'detail': 'Daily service request not found.'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            created = propose_request_extras(record, request.user, request.data.get('items') or [])
+        except DjangoValidationError as exc:
+            if getattr(exc, 'message_dict', None):
+                return Response(exc.message_dict, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': exc.messages}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            'detail': 'Extras added from the company menu. Waiting for mock payment.',
+            'reference': record.pk,
+            'payment': payment_snapshot(record),
+            'added': [
+                {'id': row.pk, 'title': row.title, 'amount_inr': format(row.amount_inr, 'f')}
+                for row in created
+            ],
+        })
+
+
+class MockExtraPaymentView(APIView):
+    """Customer/staff mock-pay proposed extras. Does not receive money."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        record = DailyServiceRequest.objects.filter(pk=pk).first()
+        if record is None:
+            return Response({'detail': 'Daily service request not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not user_may_mock_pay_request(request.user, record):
+            return Response(
+                {'detail': 'Only the request owner or staff can record this mock payment.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if not mock_visit_payment_enabled():
+            return Response(
+                {'detail': 'Mock visit payment is not enabled. No payment was recorded.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            rows = record_mock_extra_payment(record)
+        except DjangoValidationError as exc:
+            if getattr(exc, 'message_dict', None):
+                return Response(exc.message_dict, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': exc.messages}, status=status.HTTP_400_BAD_REQUEST)
+        from decimal import Decimal
+        total = sum((row.amount_inr for row in rows), Decimal('0.00'))
+        return Response({
+            'detail': TEST_PAYMENT_LABEL,
+            'test_mode': True,
+            'provider': 'razorpay_mock',
+            'money_received': False,
+            'reference': record.pk,
+            'amount_inr': format(total, 'f'),
+            'payment': payment_snapshot(record),
+        })
+
+
+class GuestMockExtraPaymentView(APIView):
+    """Guest mock-pay extras with access key or verified mobile + reference."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        if not mock_visit_payment_enabled():
+            return Response(
+                {'detail': 'Mock visit payment is not enabled. No payment was recorded.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            record = resolve_guest_owned_request(
+                request.data.get('reference'),
+                access_key=request.data.get('access_key') or '',
+                phone=request.data.get('phone_number') or '',
+            )
+        except DailyServiceRequest.DoesNotExist:
+            return Response(
+                {'detail': 'Request not found for that mobile number or key.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        try:
+            rows = record_mock_extra_payment(record)
+        except DjangoValidationError as exc:
+            if getattr(exc, 'message_dict', None):
+                return Response(exc.message_dict, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': exc.messages}, status=status.HTTP_400_BAD_REQUEST)
+        from decimal import Decimal
+        total = sum((row.amount_inr for row in rows), Decimal('0.00'))
+        return Response({
+            'detail': TEST_PAYMENT_LABEL,
+            'test_mode': True,
+            'provider': 'razorpay_mock',
+            'money_received': False,
+            'reference': record.pk,
+            'amount_inr': format(total, 'f'),
+            'payment': payment_snapshot(record),
+        })
 
 
 class ServiceOfferResponseView(APIView):
@@ -272,9 +493,9 @@ class ServiceOfferResponseView(APIView):
                 return Response(exc.message_dict, status=status.HTTP_400_BAD_REQUEST)
             return Response({'detail': exc.messages}, status=status.HTTP_400_BAD_REQUEST)
         if offer.state == ServiceOffer.State.ACCEPTED:
-            detail = 'Offer accepted.'
+            detail = 'You accepted this request.'
         else:
-            detail = 'Offer declined.'
+            detail = 'You declined this request.'
         return Response(
             {
                 'detail': detail,
@@ -285,13 +506,15 @@ class ServiceOfferResponseView(APIView):
 
 
 class MyDailyServiceRequestListView(APIView):
-    """The signed-in customer's own daily requests. Guest keys and payments stay off this list."""
+    """Signed-in account's own daily requests. No professional role required. Guest keys stay off this list."""
 
-    permission_classes = [IsAuthenticated, IsCustomer]
+    permission_classes = [IsAuthenticated, IsMarketplaceUser]
 
     def get(self, request):
         records = customer_daily_requests(request.user)
-        return Response([customer_daily_request_payload(record) for record in records])
+        return Response([
+            customer_daily_request_payload(record, request=request) for record in records
+        ])
 
     def post(self, request):
         serializer = CustomerDailyServiceRequestSerializer(
@@ -300,8 +523,12 @@ class MyDailyServiceRequestListView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         record = serializer.save()
-        payload = customer_daily_request_payload(record)
-        payload['detail'] = 'Daily service request saved. No worker is assigned yet.'
+        payload = customer_daily_request_payload(record, request=request)
+        payload['detail'] = (
+            'Mobile on account checked. Pay the inspection fee next. '
+            'Workers are offered only after that fee.'
+        )
+        payload['next_step'] = 'pay_inspection_fee'
         return Response(payload, status=status.HTTP_201_CREATED)
 
 
@@ -514,18 +741,15 @@ class ServiceProviderVerificationView(APIView):
 
 
 class ServiceRequestListCreateView(generics.ListCreateAPIView):
-    """The signed-in customer creates and lists their own service requests."""
+    """Signed-in accounts create and list their own direct provider requests. No Customer role required."""
 
     serializer_class = ServiceRequestSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsMarketplaceUser]
 
     def get_queryset(self):
         return ServiceRequest.objects.filter(customer=self.request.user).select_related('profile', 'profile__user')
 
     def perform_create(self, serializer):
-        if not self.request.user.has_capability(Capability.CUSTOMER):
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied('Only customer accounts can request a service.')
         serializer.save()
 
 
@@ -557,3 +781,103 @@ class ServiceRequestDetailView(APIView):
         service_request.status = new_status
         service_request.save(update_fields=['status', 'updated_at'])
         return Response(ServiceRequestSerializer(service_request, context={'request': request}).data)
+
+
+def _owned_daily_request(request, pk=None):
+    """Resolve a daily request by signed-in owner, access key, or verified mobile number."""
+    if pk is None:
+        raw = request.data.get('reference')
+        try:
+            pk = int(raw)
+        except (TypeError, ValueError):
+            return None
+    record = (
+        DailyServiceRequest.objects.filter(pk=pk)
+        .select_related('assigned_profile', 'assigned_profile__user', 'category', 'customer')
+        .prefetch_related('assigned_profile__skills', 'assigned_profile__service_categories')
+        .first()
+    )
+    if record is None:
+        return None
+    user = request.user
+    if user and user.is_authenticated and record.customer_id == user.id:
+        return record
+    access_key = request.data.get('access_key') or ''
+    if access_key and record.check_access_key(access_key):
+        return record
+    phone = request.data.get('phone_number') or ''
+    from .services import phone_controls_daily_request
+    if phone and phone_controls_daily_request(record, phone):
+        return record
+    return None
+
+
+class DailyServiceArrivalSignalView(APIView):
+    """Assigned provider signals arrival and receives a booking-specific code. Does not verify arrival."""
+
+    permission_classes = [IsAuthenticated, IsServiceProvider]
+
+    def post(self, request, pk):
+        record = DailyServiceRequest.objects.filter(pk=pk).select_related('assigned_profile').first()
+        if record is None:
+            return Response({'detail': 'Daily service request not found.'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            payload = provider_signals_arrival(record, provider_user=request.user)
+        except DjangoValidationError as exc:
+            if getattr(exc, 'message_dict', None):
+                return Response(exc.message_dict, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': exc.messages}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(payload)
+
+
+class DailyServiceArrivalVerifyView(APIView):
+    """Request owner confirms the arriving person with the booking code. Login OTPs are not accepted."""
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [AllowAny]
+
+    def post(self, request, pk=None):
+        record = _owned_daily_request(request, pk)
+        if record is None:
+            return Response({'detail': 'Daily service request not found.'}, status=status.HTTP_404_NOT_FOUND)
+        user = request.user if request.user and request.user.is_authenticated else None
+        try:
+            updated = customer_verifies_arrival(
+                record,
+                code=request.data.get('code'),
+                user=user,
+                access_key=request.data.get('access_key') or '',
+            )
+        except DjangoValidationError as exc:
+            if getattr(exc, 'message_dict', None):
+                return Response(exc.message_dict, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': exc.messages}, status=status.HTTP_400_BAD_REQUEST)
+        payload = customer_daily_request_payload(updated, request=request)
+        payload['detail'] = 'Arrival verified. The visit may proceed.'
+        return Response(payload)
+
+
+class DailyServiceCompleteView(APIView):
+    """Request owner confirms completion after verified arrival. Keeps the assigned worker link."""
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [AllowAny]
+
+    def post(self, request, pk=None):
+        record = _owned_daily_request(request, pk)
+        if record is None:
+            return Response({'detail': 'Daily service request not found.'}, status=status.HTTP_404_NOT_FOUND)
+        user = request.user if request.user and request.user.is_authenticated else None
+        try:
+            updated = customer_confirms_completion(
+                record,
+                user=user,
+                access_key=request.data.get('access_key') or '',
+            )
+        except DjangoValidationError as exc:
+            if getattr(exc, 'message_dict', None):
+                return Response(exc.message_dict, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': exc.messages}, status=status.HTTP_400_BAD_REQUEST)
+        payload = customer_daily_request_payload(updated, request=request)
+        payload['detail'] = 'Service marked completed for the assigned worker.'
+        return Response(payload)

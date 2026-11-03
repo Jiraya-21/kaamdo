@@ -10,8 +10,11 @@ const GuestServiceLogic = {
   CATEGORY_PATH: '/workers/categories/',
   CREATE_PATH: '/workers/daily-requests/',
   STATUS_PATH: '/workers/daily-requests/status/',
+  BY_PHONE_PATH: '/workers/daily-requests/by-phone/',
   EXPAND_PATH: '/workers/daily-requests/expand/',
   CANCEL_PATH: '/workers/daily-requests/cancel/',
+  ARRIVAL_VERIFY_PATH: '/workers/daily-requests/arrival/verify/',
+  COMPLETE_PATH: '/workers/daily-requests/complete/',
   TRACK_PAGE: 'track-request.html',
   CUSTOMER_PAGE: 'customer.html',
   STEPS: ['service', 'details', 'review'],
@@ -23,17 +26,18 @@ const GuestServiceLogic = {
       && data.email.available === true
       && data.email.mode === 'development',
     );
+    const phoneMode = data && data.phone ? String(data.phone.mode || '') : '';
     const phoneOk = Boolean(
       data
       && data.phone
       && data.phone.available === true
-      && data.phone.mode === 'sms',
+      && (phoneMode === 'sms' || phoneMode === 'development'),
     );
     return {
       email: emailOk,
       phone: phoneOk,
       emailMode: emailOk ? 'development' : 'unavailable',
-      phoneMode: phoneOk ? 'sms' : 'unavailable',
+      phoneMode: phoneOk ? phoneMode : 'unavailable',
     };
   },
 
@@ -120,7 +124,7 @@ const GuestServiceLogic = {
   placeLine(values) {
     const place = values && values.place;
     if (typeof LocationFields !== 'undefined') {
-      return LocationFields.placeLabel(place, values.taluk, values.district);
+      return LocationFields.placeLabel(values.street, place, values.taluk, values.district, values.pin);
     }
     return this.clean(place);
   },
@@ -140,10 +144,35 @@ const GuestServiceLogic = {
     return payload;
   },
 
-  statusPayload(reference, accessKey) {
-    return {
+  statusPayload(reference, accessKey, phone) {
+    const payload = {
       reference: Number(String(reference).trim()),
-      access_key: String(accessKey == null ? '' : accessKey).trim(),
+    };
+    const key = String(accessKey == null ? '' : accessKey).trim();
+    const mobile = this.phone(phone);
+    if (key) payload.access_key = key;
+    if (mobile) payload.phone_number = mobile;
+    return payload;
+  },
+
+  byPhonePayload(phone) {
+    return { phone_number: this.phone(phone) };
+  },
+
+  trackPhoneProblems(phone) {
+    return this.phoneProblems(phone);
+  },
+
+  trackListView(data) {
+    if (!data || !Array.isArray(data.requests)) {
+      return { ok: false, text: 'No requests were returned for this mobile number.', rows: [] };
+    }
+    return {
+      ok: true,
+      phone: this.phone(data.phone_number),
+      count: Number(data.count || data.requests.length) || 0,
+      rows: data.requests,
+      text: data.detail || '',
     };
   },
 
@@ -199,17 +228,17 @@ const GuestServiceLogic = {
       && Number.isFinite(latitude) && latitude >= -90 && latitude <= 90
       && Number.isFinite(longitude) && longitude >= -180 && longitude <= 180;
     if (Object.hasOwn(values, 'district') && !this.clean(values.district)) {
-      problems.push('Choose an official Karnataka district.');
+      problems.push('Choose an official district.');
     }
-    if (Object.hasOwn(values, 'taluk') && !this.clean(values.taluk)) {
+    if (Object.hasOwn(values, 'taluk') && !this.clean(values.taluk) && this.clean(values.district) !== 'Mumbai City') {
       problems.push('Choose an official taluk.');
     }
     if (!locationReady) {
       problems.push('Use this phone location so KaamDo can find a nearby worker. A place name alone does not find a worker.');
     }
     const radius = Number(values.radiusKm);
-    if (!Number.isInteger(radius) || radius < 8 || radius > 50) {
-      problems.push('Choose a radius from 8 to 50 kilometres.');
+    if (!Number.isInteger(radius) || radius < 5 || radius > 100 || radius % 5 !== 0) {
+      problems.push('Choose a radius from 5 to 100 kilometres.');
     }
     return problems;
   },
@@ -224,44 +253,46 @@ const GuestServiceLogic = {
     return problems;
   },
 
-  expandPayload(reference, accessKey, radiusKm) {
-    return {
+  expandPayload(reference, accessKey, radiusKm, phone) {
+    const payload = {
       reference: Number(reference),
-      access_key: String(accessKey || '').trim(),
       radius_km: Number(radiusKm),
     };
+    const key = String(accessKey || '').trim();
+    const mobile = this.phone(phone);
+    if (key) payload.access_key = key;
+    if (mobile) payload.phone_number = mobile;
+    return payload;
   },
 
-  cancelPayload(reference, accessKey) {
-    return {
-      reference: Number(reference),
-      access_key: String(accessKey || '').trim(),
-    };
+  cancelPayload(reference, accessKey, phone) {
+    return this.statusPayload(reference, accessKey, phone);
   },
 
   sendResult(data) {
+    const sentText = 'OTP sent to your mobile.';
     if (data && data.delivery === 'sms' && !data.dev_code) {
       return {
         ok: true,
         key: 'guest.codeSent',
         devCode: '',
         practice: false,
-        text: data.detail || 'The SMS provider accepted the request. Enter the code when it arrives.',
+        text: data.detail || sentText,
       };
     }
     if (data && data.delivery === 'development' && data.dev_code) {
       return {
         ok: true,
-        key: 'guest.devCode',
+        key: 'guest.codeSent',
         devCode: String(data.dev_code),
-        practice: true,
-        text: data.detail || 'Development practice code only. This was not sent by SMS or email.',
+        practice: false,
+        text: data.detail || sentText,
       };
     }
     return {
       ok: false,
       key: 'guest.noCode',
-      text: 'No code was issued. Nothing was verified.',
+      text: 'No code was sent. Try again.',
     };
   },
 
@@ -285,10 +316,14 @@ const GuestServiceLogic = {
       key: 'guest.savedSummary',
       reference: data.reference,
       accessKey: String(data.access_key),
-      status: data.status,
-      text: 'Request saved. Copy the access key now. It is not a payment, and no worker is assigned yet.',
+      status: data.status || 'awaiting_payment',
+      payment: data.payment || null,
+      nextStep: data.next_step || 'pay_inspection_fee',
+      text: 'Mobile checked. Pay the inspection fee next. Workers are offered only after that fee.',
     };
   },
+
+  GUEST_MOCK_PAYMENT_PATH: '/workers/daily-requests/mock-payment/',
 
   categoryChoice(categories, query) {
     const rows = Array.isArray(categories) ? categories : [];
@@ -312,9 +347,9 @@ const GuestServiceLogic = {
   statusSentence(status, workerName) {
     const name = workerName ? String(workerName) : '';
     const sentences = {
-      draft: 'Saved. No worker is assigned yet.',
-      awaiting_payment: 'Waiting for a recorded payment. No worker is assigned yet.',
-      dispatch_pending: 'Ready to offer after a recorded payment. No worker is assigned yet.',
+      draft: 'Saved. Verify mobile, then pay the inspection fee. No worker yet.',
+      awaiting_payment: 'Mobile checked. Pay the inspection fee. No worker is offered yet.',
+      dispatch_pending: 'Inspection fee recorded. Ready to offer to workers. No worker has accepted yet.',
       no_workers: 'No eligible worker is in range. No worker is assigned.',
       offering: 'Offered to eligible workers. No worker has accepted yet.',
       assigned: name ? `A worker accepted: ${name}.` : 'A worker accepted.',
@@ -341,23 +376,55 @@ const GuestServiceLogic = {
     return sentences[reason] || '';
   },
 
+  arrivalVerifyPayload(reference, accessKey, code, phone) {
+    const payload = this.statusPayload(reference, accessKey, phone);
+    payload.code = String(code == null ? '' : code).replace(/\s+/g, '');
+    return payload;
+  },
+
+  completePayload(reference, accessKey, phone) {
+    return this.statusPayload(reference, accessKey, phone);
+  },
+
+  publicWorker(data) {
+    const primary = data && data.worker_identity && typeof data.worker_identity === 'object'
+      ? data.worker_identity
+      : null;
+    const extra = data && data.assigned_profile && typeof data.assigned_profile === 'object'
+      ? data.assigned_profile
+      : null;
+    const card = primary || extra;
+    if (!card) return null;
+    const photo = String(card.photo_url || '').trim();
+    const skills = Array.isArray(card.skills) && card.skills.length
+      ? card.skills
+      : (extra && Array.isArray(extra.skills) ? extra.skills : []);
+    return {
+      id: card.profile_id != null ? card.profile_id : card.id,
+      worker_id: card.worker_id ? String(card.worker_id) : '',
+      display_name: card.display_name || (extra && extra.display_name) || '',
+      photo_url: /^https?:\/\//i.test(photo) ? photo : '',
+      main_category: card.main_category ? String(card.main_category) : '',
+      skills: skills.map(String),
+      district: card.district || (extra && extra.district) || '',
+      locality: card.locality || (extra && extra.locality) || '',
+      identity_verified: card.identity_verified === true,
+      identity_verification: card.identity_verification ? String(card.identity_verification) : '',
+    };
+  },
+
   statusView(data) {
     if (!data || data.reference == null || !data.status) {
       return { ok: false, text: 'The request status was not confirmed.' };
     }
-    const profile = data.assigned_profile;
-    const card = profile ? {
-      id: profile.id,
-      display_name: profile.display_name,
-      skills: Array.isArray(profile.skills) ? profile.skills : [],
-      district: profile.district,
-      locality: profile.locality,
-    } : null;
+    const card = this.publicWorker(data);
     const reasonText = this.reasonSentence(data.match_reason);
     const statusText = reasonText || this.statusSentence(data.status, card && card.display_name);
     return {
       ok: true,
       reference: data.reference,
+      category: data.category ? String(data.category) : '',
+      description: data.description ? String(data.description) : '',
       status: data.status,
       radiusKm: data.radius_km,
       searchRadiusKm: data.search_radius_km,
@@ -372,9 +439,18 @@ const GuestServiceLogic = {
         || data.status === 'no_acceptance'
         || data.status === 'assigned',
       assignedProfile: card,
+      workerIdentity: card,
+      arrivalVerifiedAt: data.arrival_verified_at ? String(data.arrival_verified_at) : '',
+      canVerifyArrival: data.status === 'assigned',
+      canComplete: data.status === 'in_progress' && Boolean(data.arrival_verified_at),
+      payment: data.payment || null,
+      canPayInspection: Boolean(data.payment && data.payment.can_pay_inspection && data.payment.mock_checkout),
+      canPayExtras: Boolean(data.payment && data.payment.can_pay_extras && data.payment.mock_checkout),
       text: `Reference ${data.reference}. ${statusText}`,
     };
   },
+
+  GUEST_MOCK_EXTRA_PATH: '/workers/daily-requests/mock-extra-payment/',
 
   errorText(error) {
     if (!error || typeof error.status !== 'number') {
@@ -386,15 +462,15 @@ const GuestServiceLogic = {
       return data.non_field_errors.join(' ');
     }
     if (data && typeof data === 'object') {
-      const parts = Object.entries(data).map(([key, value]) => {
-        const text = Array.isArray(value) ? value.join(' ') : String(value);
-        return `${key}: ${text}`;
-      });
+      const parts = Object.entries(data).map(([, value]) => (
+        Array.isArray(value) ? value.join(' ') : String(value)
+      )).filter((part) => part && part !== '[object Object]');
       if (parts.length) return parts.join(' ');
     }
-    if (error.status === 404) return 'Daily service request not found.';
-    if (error.status >= 500) return 'The server had a problem. Nothing was saved.';
-    return 'The request was rejected. Nothing was saved.';
+    if (error.status === 404) return 'That request was not found. Check the number and secret code.';
+    if (error.status === 401) return 'Please sign in and try again.';
+    if (error.status >= 500) return 'The server had a problem. Try again in a moment.';
+    return 'Something went wrong. Check the details and try again.';
   },
 };
 

@@ -84,11 +84,11 @@ class DailyServiceModelTests(TestCase):
         self.assertEqual(untouched.skills.count(), 1)
 
     def test_customer_radius_accepts_bounds_and_rejects_values_outside_them(self):
-        for radius in (8, 15, 50):
+        for radius in (5, 8, 15, 50, 60, 100):
             record = self.make_request(radius_km=radius)
             self.assertEqual(record.radius_km, radius)
             record.delete()
-        for radius in (7, 51):
+        for radius in (4, 101):
             record = DailyServiceRequest(**self.request_values(radius_km=radius))
             with self.assertRaises(ValidationError):
                 record.full_clean()

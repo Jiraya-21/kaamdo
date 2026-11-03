@@ -1,14 +1,14 @@
 /**
- * Account home: one workspace card per capability from GET /api/v1/auth/me/.
+ * Compact account hub: name, Available tap, marketplace taps, roles, add work.
  */
 
 const DashboardController = {
   user: null,
+  availabilityState: null,
 
   async init() {
     this.bindLogout();
-    const retry = document.getElementById('session-retry');
-    if (retry) retry.hidden = true;
+    this.hideAlert();
     const result = await AccountSession.restore();
     if (result.status === 'anonymous' || result.status === 'invalid') {
       window.location.replace('../auth/login.html');
@@ -22,27 +22,62 @@ const DashboardController = {
     this.render();
   },
 
+  hideAlert() {
+    const alert = document.getElementById('account-alert');
+    const status = document.getElementById('dashboard-status');
+    const retry = document.getElementById('session-retry');
+    if (alert) alert.hidden = true;
+    if (status) status.textContent = '';
+    if (retry) retry.hidden = true;
+  },
+
+  showAlert(message, { retry = false } = {}) {
+    const alert = document.getElementById('account-alert');
+    const status = document.getElementById('dashboard-status');
+    const retryBtn = document.getElementById('session-retry');
+    if (status) status.textContent = message || '';
+    if (alert) alert.hidden = !message;
+    if (retryBtn) {
+      retryBtn.hidden = !retry;
+      if (retry && retryBtn.dataset.bound !== 'true') {
+        retryBtn.dataset.bound = 'true';
+        retryBtn.addEventListener('click', () => {
+          this.hideAlert();
+          this.init();
+        });
+      }
+    }
+  },
+
   showOffline() {
     this.user = null;
     const nameEl = document.getElementById('dashboard-name');
     const profileEl = document.getElementById('dashboard-profile');
     if (nameEl) nameEl.textContent = this.text('account.yourAccount');
     if (profileEl) profileEl.textContent = '';
-    this.showMessage(this.text('account.offline'));
-    const retry = document.getElementById('session-retry');
-    if (!retry) return;
-    retry.hidden = false;
-    if (retry.dataset.bound === 'true') return;
-    retry.dataset.bound = 'true';
-    retry.addEventListener('click', () => {
-      this.showMessage('');
-      this.init();
-    });
+    this.showAlert(this.text('account.offline'), { retry: true });
+    const roles = document.getElementById('roles-block');
+    const add = document.getElementById('add-role-block');
+    const notify = document.getElementById('notify-block');
+    if (roles) roles.hidden = true;
+    if (add) add.hidden = true;
+    if (notify) notify.hidden = true;
+    const avail = document.getElementById('hub-availability');
+    if (avail) {
+      avail.hidden = true;
+      avail.replaceChildren();
+    }
+    this.availabilityState = null;
+    const market = document.getElementById('marketplace-list');
+    if (market) market.replaceChildren();
   },
 
   showMessage(text) {
-    const status = document.getElementById('dashboard-status');
-    if (status) status.textContent = text;
+    if (!text) {
+      this.hideAlert();
+      return;
+    }
+    this.showAlert(text, { retry: false });
   },
 
   displayName(user) {
@@ -58,30 +93,76 @@ const DashboardController = {
     return values ? I18n.fill(key, values) : I18n.t(key);
   },
 
+  verificationLabel(code) {
+    if (code !== 'service_provider' || !this.user || !this.user.service_provider) return '';
+    const raw = String(this.user.service_provider.verification_status || '').trim();
+    if (!raw || raw === 'approved') return '';
+    const shortKey = {
+      not_submitted: 'hub.verifyNeed',
+      pending: 'hub.verifyWait',
+      rejected: 'hub.verifyNo',
+      needs_info: 'hub.verifyMore',
+    }[raw];
+    return shortKey ? this.text(shortKey) : '';
+  },
+
   render() {
+    this.hideAlert();
     const user = this.user;
     const nameEl = document.getElementById('dashboard-name');
     const profileEl = document.getElementById('dashboard-profile');
     if (nameEl) nameEl.textContent = this.displayName(user);
-    if (profileEl) {
-      profileEl.textContent = user.phone_number || '';
-    }
-    this.renderIdentity();
+    if (profileEl) profileEl.textContent = user.phone_number || '';
+    this.renderIdentity('');
+    this.loadIdentityPhoto();
     this.renderTestPaymentBanner();
-    this.renderProviderStatus();
+    this.renderAvailability();
+    this.renderMarketplaces();
     this.renderRoles();
     this.renderAdd();
     this.loadNotifications();
     this.bindLogout();
+    if (typeof I18n !== 'undefined') I18n.apply(document);
+  },
+
+  renderAvailability() {
+    const host = document.getElementById('hub-availability');
+    if (!host) return;
+    const isProvider = typeof ProviderStatusLogic !== 'undefined'
+      && ProviderStatusLogic.isProvider(this.user);
+    if (!isProvider || typeof ProviderStatus === 'undefined') {
+      host.hidden = true;
+      host.replaceChildren();
+      this.availabilityState = null;
+      return;
+    }
+    if (this.availabilityState && host.contains(this.availabilityState.wrap)) {
+      host.hidden = false;
+      return;
+    }
+    host.replaceChildren();
+    host.hidden = false;
+    this.availabilityState = ProviderStatus.mountAvailability(host, { compact: true });
+  },
+
+  async loadIdentityPhoto() {
+    if (typeof ProviderStatusLogic === 'undefined' || !ProviderStatusLogic.isProvider(this.user)) {
+      return;
+    }
+    try {
+      const data = await ApiClient.get(ProviderStatusLogic.PROFILE_PATH);
+      if (this.user) this.renderIdentity(data && data.photo_url);
+    } catch (error) {
+      if (this.user) this.renderIdentity('');
+    }
   },
 
   renderTestPaymentBanner() {
     const banner = document.getElementById('test-payment-banner');
     if (!banner) return;
-    const payload = this.user && this.user.test_payment;
-    const on = Boolean(payload && payload.enabled && payload.money_received === false);
-    banner.hidden = !on;
-    banner.textContent = on ? (payload.label || this.text('pay.testBanner')) : '';
+    // First-phase UI: do not show staff/test payment banners to ordinary users.
+    banner.hidden = true;
+    banner.textContent = '';
   },
 
   renderIdentity(photoUrl) {
@@ -109,103 +190,137 @@ const DashboardController = {
     }
   },
 
-  renderProviderStatus() {
-    const host = document.getElementById('provider-status');
-    if (!host) return;
-    const allowed = typeof ProviderStatusLogic !== 'undefined'
-      && ProviderStatusLogic.isProvider(this.user);
-    host.hidden = !allowed;
-    host.replaceChildren();
-    if (!allowed || typeof ProviderStatus === 'undefined') return;
-    ProviderStatus.mountAvailability(host, {
-      onLoaded: (_value, _hasProfile, data) => {
-        this.renderIdentity(data && data.photo_url);
-        if (this.photoState) {
-          this.photoState.hasProfile = Boolean(data);
-          ProviderStatus.applyPhoto(this.photoState, data && data.photo_url, Boolean(data));
-        }
-      },
-    });
-    this.photoState = ProviderStatus.mountPhoto(host, {
-      onChanged: (url) => this.renderIdentity(url),
+  renderMarketplaces() {
+    const container = document.getElementById('marketplace-list');
+    if (!container) return;
+    container.replaceChildren();
+    const items = AccountCatalog.marketplaces || [];
+    items.forEach((item) => {
+      const link = document.createElement('a');
+      link.className = 'marketplace-link';
+      link.href = AccountCatalog.marketplaceHref(item);
+      if (typeof KaamdoImages !== 'undefined') {
+        const image = document.createElement('img');
+        image.className = 'marketplace-link-image';
+        image.src = KaamdoImages.marketplace(item.id);
+        image.alt = '';
+        image.setAttribute('aria-hidden', 'true');
+        link.appendChild(image);
+      }
+      const title = document.createElement('span');
+      title.className = 'marketplace-link-title';
+      title.textContent = AccountCatalog.itemLabel(item);
+      link.append(title);
+      container.appendChild(link);
     });
   },
 
   renderRoles() {
+    const block = document.getElementById('roles-block');
     const container = document.getElementById('role-list');
-    if (!container) return;
+    if (!block || !container) return;
     container.replaceChildren();
     const owned = AccountCatalog.allItems().filter((item) => (
       AccountSession.hasCapability(this.user, item.code)
     ));
-    if (!owned.length) {
-      const empty = document.createElement('p');
-      empty.className = 'text-muted';
-      empty.textContent = this.text('workspace.none');
-      container.appendChild(empty);
-      return;
-    }
-    owned.forEach((item) => container.appendChild(this.roleCard(item)));
+    block.hidden = owned.length === 0;
+    if (!owned.length) return;
+    owned.forEach((item) => container.appendChild(this.roleRow(item)));
   },
 
-  roleCard(item) {
-    const card = document.createElement('article');
-    card.className = 'role-card';
-    const title = document.createElement('h3');
-    title.textContent = AccountCatalog.itemLabel(item);
-    const summary = document.createElement('p');
-    summary.className = 'text-muted';
-    summary.textContent = AccountCatalog.itemSummary(item);
-    const action = document.createElement('button');
-    action.type = 'button';
-    action.className = 'btn btn-primary';
-    action.textContent = this.text('workspace.open');
-    action.addEventListener('click', () => this.openWorkspace(item, action));
-    card.append(title, summary, action);
-    if (item.code === 'service_provider' && this.user.service_provider) {
-      const status = document.createElement('p');
-      status.className = 'text-muted';
-      status.textContent = this.text('account.verification', {
-        status: this.user.service_provider.verification_status.replaceAll('_', ' '),
-      });
-      card.appendChild(status);
+  roleTagLine(item) {
+    const section = item.groupTitle || this.text('nav.daily');
+    if (item.code === 'service_provider') {
+      const categories = (
+        this.user
+        && this.user.service_provider
+        && Array.isArray(this.user.service_provider.categories)
+      ) ? this.user.service_provider.categories : [];
+      const names = categories
+        .map((row) => (row && row.name ? String(row.name).trim() : ''))
+        .filter(Boolean);
+      if (names.length) {
+        return names.map((name) => `${section} · ${name}`).join(' · ');
+      }
+      return `${section} · ${this.text('role.providerShort')}`;
     }
-    return card;
+    return `${section} · ${AccountCatalog.itemLabel(item)}`;
   },
 
-  async openWorkspace(item, button) {
-    this.showMessage('');
-    if (button) button.disabled = true;
+  roleRow(item) {
+    const row = document.createElement('li');
+    row.className = 'hub-row';
+
+    const copy = document.createElement('div');
+    copy.className = 'hub-row-copy';
+    const title = document.createElement('p');
+    title.className = 'hub-row-title';
+    title.textContent = this.roleTagLine(item);
+    copy.append(title);
+    const verification = this.verificationLabel(item.code);
+    if (verification) {
+      const meta = document.createElement('p');
+      meta.className = 'hub-row-meta';
+      meta.textContent = verification;
+      copy.appendChild(meta);
+    }
+
+    const action = document.createElement('a');
+    action.className = 'btn btn-primary btn-sm';
+    action.href = AccountCatalog.workspaceHref(item);
+    action.textContent = this.text('hub.openWork');
+    action.addEventListener('click', (event) => {
+      event.preventDefault();
+      this.openWorkspace(item, action);
+    });
+
+    row.append(copy, action);
+    return row;
+  },
+
+  async openWorkspace(item, control) {
+    this.hideAlert();
+    if (control) {
+      control.setAttribute('aria-disabled', 'true');
+      if (control.tagName === 'BUTTON' || control.tagName === 'A') {
+        control.style.pointerEvents = 'none';
+      }
+    }
     try {
       this.user = await AuthApi.setActiveMode(item.code);
       AccountSession.save(null, this.user);
     } catch (error) {
-      /* The workspace page still checks the capability on the server. */
+      /* Workspace page still checks capability on the server. */
     }
     window.location.href = AccountCatalog.workspaceHref(item);
   },
 
   renderAdd() {
+    const block = document.getElementById('add-role-block');
     const container = document.getElementById('capability-adder');
-    if (!container) return;
+    if (!block || !container) return;
     container.replaceChildren();
     const missing = AccountCatalog.allItems().filter(
       (item) => !AccountSession.hasCapability(this.user, item.code)
     );
     if (!missing.length) {
-      const done = document.createElement('p');
-      done.className = 'text-muted';
-      done.textContent = this.text('account.allEnabled');
-      container.appendChild(done);
+      block.hidden = true;
       return;
     }
+    block.hidden = false;
     missing.forEach((item) => {
+      const row = document.createElement('div');
+      row.className = 'hub-add-row';
+      const title = document.createElement('p');
+      title.className = 'hub-row-title';
+      title.textContent = AccountCatalog.itemLabel(item);
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = 'btn btn-outline';
-      button.textContent = this.text('account.addRole', { label: AccountCatalog.itemLabel(item) });
+      button.className = 'btn btn-outline btn-sm';
+      button.textContent = this.text('hub.addWork');
       button.addEventListener('click', () => this.enable(item.code, button));
-      container.appendChild(button);
+      row.append(title, button);
+      container.appendChild(row);
     });
   },
 
@@ -215,7 +330,7 @@ const DashboardController = {
     button.dataset.bound = 'true';
     button.addEventListener('click', async () => {
       button.disabled = true;
-      this.showMessage(this.text('account.signingOut'));
+      this.showAlert(this.text('account.signingOut'), { retry: false });
       const result = await AccountSession.logout();
       const notice = result.serverReached ? '' : '?notice=offline-logout';
       window.location.replace(`../auth/login.html${notice}`);
@@ -223,32 +338,35 @@ const DashboardController = {
   },
 
   async loadNotifications() {
+    const block = document.getElementById('notify-block');
     const status = document.getElementById('notification-status');
     const list = document.getElementById('notification-list');
-    if (!status || !list) return;
-    status.textContent = this.text('notify.loading');
+    if (!block || !status || !list) return;
     list.replaceChildren();
+    status.hidden = true;
+    status.textContent = '';
     try {
       const rows = await ApiClient.get('/notifications/');
       const items = Array.isArray(rows) ? rows : [];
       if (!items.length) {
-        status.textContent = this.text('notify.empty');
+        block.hidden = true;
         return;
       }
-      status.textContent = '';
+      block.hidden = false;
       items.forEach((row) => list.appendChild(this.notificationRow(row)));
     } catch (error) {
-      status.textContent = this.text('notify.empty');
+      block.hidden = true;
     }
   },
 
   notificationRow(row) {
     const article = document.createElement('article');
-    article.className = 'notify-row';
-    const title = document.createElement('h3');
+    article.className = 'hub-notify-row';
+    const title = document.createElement('p');
+    title.className = 'hub-row-title';
     title.textContent = row.title || '';
     const body = document.createElement('p');
-    body.className = 'text-muted';
+    body.className = 'hub-row-summary';
     body.textContent = row.body || '';
     article.append(title, body);
     if (!row.read_at) {
@@ -273,17 +391,17 @@ const DashboardController = {
   },
 
   async enable(code, button) {
-    this.showMessage('');
+    this.hideAlert();
     if (button) button.disabled = true;
     try {
       this.user = await AuthApi.enableCapability(code);
       AccountSession.save(null, this.user);
       this.render();
     } catch (error) {
-      this.showMessage(AuthApi.formatError(error));
+      this.showAlert(AuthApi.formatError(error), { retry: false });
       if (button) button.disabled = false;
     }
-  }
+  },
 };
 
 document.addEventListener('DOMContentLoaded', () => {

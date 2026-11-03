@@ -31,6 +31,9 @@ const CONFIG = {
 
   DEFAULT_SEARCH_RADIUS_KM: 20,
 
+  // Soft first-phase focus for demos. Does not block other districts.
+  FIRST_AREA_DISTRICT: 'Bidar',
+
   STORAGE_KEYS: {
     AUTH_TOKEN: 'kaamdo_auth_token',
     USER_DATA: 'kaamdo_user_data',

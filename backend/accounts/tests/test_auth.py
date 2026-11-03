@@ -322,7 +322,7 @@ class AccountsApiTests(APITestCase):
         self.assertIsNone(staff_off.data['test_payment'])
         self.assertEqual(staff_on.data['test_payment']['enabled'], True)
         self.assertEqual(staff_on.data['test_payment']['money_received'], False)
-        self.assertIn('TEST MODE', staff_on.data['test_payment']['label'])
+        self.assertIn('Inspection fee paid', staff_on.data['test_payment']['label'])
         self.assertNotIn('is_staff', staff_on.data)
         self.assertIsNone(staff_prod.data['test_payment'])
         self.assertIsNone(ordinary_on.data['test_payment'])

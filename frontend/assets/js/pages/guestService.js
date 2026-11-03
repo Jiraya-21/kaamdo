@@ -17,6 +17,7 @@ const GuestServicePage = {
   init() {
     sessionStorage.removeItem('kaamdo_guest_reference');
     sessionStorage.removeItem('kaamdo_guest_access_key');
+    sessionStorage.removeItem('kaamdo_guest_phone');
     this.bind();
     this.showSignedInHint();
     this.loadOptions();
@@ -35,8 +36,7 @@ const GuestServicePage = {
     document.getElementById('guest-request-form').addEventListener('submit', (event) => this.createRequest(event));
     document.getElementById('details-back').addEventListener('click', () => this.showStep('service'));
     document.getElementById('review-back').addEventListener('click', () => this.showStep('details'));
-    const locate = document.getElementById('guest-locate');
-    if (locate) locate.addEventListener('click', () => this.locate());
+    this.bindLocation();
     document.getElementById('copy-reference').addEventListener('click', () => {
       this.copyValue(this.savedReference, this.text('guest.copyRef'));
     });
@@ -151,8 +151,11 @@ const GuestServicePage = {
       card.className = 'service-card';
       if (String(row.id) === String(selectedId)) card.classList.add('is-selected');
       const image = document.createElement('img');
-      image.src = '../../assets/images/services/service.svg';
+      image.src = typeof KaamdoImages !== 'undefined'
+        ? KaamdoImages.category(row.slug)
+        : '../../assets/images/services/service.jpg';
       image.alt = this.label(row.slug, row.name);
+      image.loading = 'lazy';
       const body = document.createElement('div');
       const title = document.createElement('h3');
       title.textContent = this.label(row.slug, row.name);
@@ -198,9 +201,36 @@ const GuestServicePage = {
   async loadPlaces() {
     if (typeof LocationFields === 'undefined') return;
     await LocationFields.enhanceByIds({
+      state: 'request-state',
       district: 'request-district',
       taluk: 'request-taluk',
       locality: 'request-place',
+    });
+    this.bindLocation();
+    if (typeof RadiusControl !== 'undefined') {
+      RadiusControl.bind(
+        document.getElementById('request-radius'),
+        document.getElementById('request-radius-value'),
+      );
+    }
+  },
+
+  bindLocation() {
+    if (typeof LocationDetect === 'undefined') return;
+    LocationDetect.bind({
+      button: document.getElementById('guest-locate'),
+      status: document.getElementById('location-state'),
+      mapHost: document.getElementById('guest-map-note'),
+      fields: {
+        state: document.getElementById('request-state'),
+        district: document.getElementById('request-district'),
+        taluk: document.getElementById('request-taluk'),
+        locality: document.getElementById('request-place'),
+        street: document.getElementById('request-street'),
+        pin: document.getElementById('request-pin'),
+        latitude: document.getElementById('request-latitude'),
+        longitude: document.getElementById('request-longitude'),
+      },
     });
   },
 
@@ -211,9 +241,12 @@ const GuestServicePage = {
       phone: document.getElementById('request-phone').value,
       categoryId: document.getElementById('request-category').value,
       description: document.getElementById('request-description').value,
+      state: document.getElementById('request-state') ? document.getElementById('request-state').value : '',
       district: document.getElementById('request-district') ? document.getElementById('request-district').value : '',
       taluk: document.getElementById('request-taluk') ? document.getElementById('request-taluk').value : '',
       place: document.getElementById('request-place').value,
+      street: document.getElementById('request-street') ? document.getElementById('request-street').value : '',
+      pin: document.getElementById('request-pin') ? document.getElementById('request-pin').value : '',
       latitude: document.getElementById('request-latitude').value,
       longitude: document.getElementById('request-longitude').value,
       radiusKm: document.getElementById('request-radius').value,
@@ -405,7 +438,7 @@ const GuestServicePage = {
     const note = document.getElementById('verify-dev-note');
     note.hidden = false;
     const template = typeof I18n === 'undefined'
-      ? 'Development practice code only. This was not sent by SMS or email. Code: {code}'
+      ? 'OTP sent to your mobile. Code: {code}'
       : I18n.t('guest.devCode');
     note.textContent = template.split('{code}').join(code);
   },
@@ -478,6 +511,24 @@ const GuestServicePage = {
   },
 
   async locate() {
+    const fields = {
+      state: document.getElementById('request-state'),
+      district: document.getElementById('request-district'),
+      taluk: document.getElementById('request-taluk'),
+      locality: document.getElementById('request-place'),
+      street: document.getElementById('request-street'),
+      pin: document.getElementById('request-pin'),
+      latitude: document.getElementById('request-latitude'),
+      longitude: document.getElementById('request-longitude'),
+    };
+    if (typeof LocationDetect !== 'undefined') {
+      await LocationDetect.detect({
+        status: document.getElementById('location-state'),
+        mapHost: document.getElementById('guest-map-note'),
+        fields,
+      });
+      return;
+    }
     if (typeof GeolocationUtil === 'undefined') return;
     this.show('location-state', this.text('guest.locating'), 'info');
     try {
@@ -485,13 +536,6 @@ const GuestServicePage = {
       document.getElementById('request-latitude').value = GeolocationUtil.coordinateText(coords.latitude);
       document.getElementById('request-longitude').value = GeolocationUtil.coordinateText(coords.longitude);
       this.show('location-state', this.text('guest.located'), 'success');
-      if (typeof KaamdoMap !== 'undefined') {
-        KaamdoMap.renderNote(
-          document.getElementById('guest-map-note'),
-          coords.latitude,
-          coords.longitude,
-        );
-      }
     } catch (error) {
       this.show('location-state', this.text('guest.locationFailed'), 'error');
     }
@@ -541,21 +585,78 @@ const GuestServicePage = {
   showConfirmation(result) {
     this.savedReference = String(result.reference);
     this.savedAccessKey = String(result.accessKey || '');
+    this.savedPayment = result.payment || null;
     document.getElementById('confirm-summary').textContent = this.text(result.key || 'guest.savedSummary');
     document.getElementById('confirm-reference').textContent = this.savedReference;
-    document.getElementById('confirm-status').textContent = result.status || 'draft';
-    document.getElementById('confirm-access-key').textContent = this.savedAccessKey;
+    document.getElementById('confirm-status').textContent = typeof I18n === 'undefined'
+      ? GuestServiceLogic.statusSentence(result.status || 'awaiting_payment', '')
+      : I18n.statusText(result.status || 'awaiting_payment', '');
+    try {
+      sessionStorage.setItem('kaamdo_guest_reference', this.savedReference);
+      sessionStorage.setItem('kaamdo_guest_access_key', this.savedAccessKey);
+      const phoneInput = document.getElementById('request-phone');
+      const phone = GuestServiceLogic.phone(phoneInput ? phoneInput.value : '');
+      if (phone) sessionStorage.setItem('kaamdo_guest_phone', phone);
+    } catch (error) { /* ignore */ }
+    const accessKeyNode = document.getElementById('confirm-access-key');
+    if (accessKeyNode) {
+      accessKeyNode.textContent = this.savedAccessKey;
+      accessKeyNode.hidden = true;
+    }
     const keyCopy = document.getElementById('confirm-key-copy');
     const copyKey = document.getElementById('copy-access-key');
-    if (keyCopy) keyCopy.hidden = !this.savedAccessKey;
-    if (copyKey) copyKey.hidden = !this.savedAccessKey;
+    if (keyCopy) keyCopy.hidden = true;
+    if (copyKey) copyKey.hidden = true;
     const track = document.getElementById('confirm-track-link');
-    if (track) track.href = GuestServiceLogic.trackHref(this.savedReference);
+    if (track) {
+      const base = GuestServiceLogic.trackHref(this.savedReference);
+      track.href = `${base}${base.includes('?') ? '&' : '?'}guest=1`;
+    }
+    this.mountConfirmPayment(result);
     document.getElementById('guest-request-form').hidden = true;
     document.getElementById('guest-verify-block').hidden = true;
     document.getElementById('request-confirmation').hidden = false;
     document.getElementById('confirm-notice').textContent = '';
     document.getElementById('review-back').hidden = true;
+  },
+
+  mountConfirmPayment(result) {
+    const wrap = document.getElementById('confirm-pay-wrap');
+    const feeLine = document.getElementById('confirm-fee-line');
+    const button = document.getElementById('confirm-pay-fee');
+    const payment = result.payment || {};
+    const canPay = payment.can_pay_inspection === true && payment.mock_checkout === true;
+    const amount = payment.inspection_fee_inr || payment.payment_amount_inr || '99.00';
+    if (feeLine) {
+      feeLine.hidden = false;
+      feeLine.textContent = this.fill('pay.inspectionHelp', { amount });
+    }
+    if (wrap) wrap.hidden = !canPay;
+    if (!button) return;
+    button.onclick = () => {
+      if (typeof MockCheckout === 'undefined') return;
+      MockCheckout.open({
+        title: this.text('pay.razorpayTitle'),
+        amountInr: amount,
+        note: this.text('guest.payNextBody'),
+        onConfirm: async () => {
+          const data = await ApiClient.post(GuestServiceLogic.GUEST_MOCK_PAYMENT_PATH, {
+            reference: this.savedReference,
+            access_key: this.savedAccessKey,
+          });
+          if (!data || data.money_received) throw new Error(this.text('pay.skipFailed'));
+          document.getElementById('confirm-status').textContent = typeof I18n === 'undefined'
+            ? GuestServiceLogic.statusSentence(data.status || 'offering', '')
+            : I18n.statusText(data.status || 'offering', '');
+          this.show(
+            'confirm-notice',
+            data.detail || this.text('pay.skipped'),
+            'success',
+          );
+          if (wrap) wrap.hidden = true;
+        },
+      });
+    };
   },
 
   async copyValue(value, label) {

@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="KaamDo - Local Work, Services, and Agricultural Equipment Marketplace in Karnataka">
   <title data-i18n="title.home">KaamDo - Find work. Hire help. Rent equipment.</title>
+  <link rel="icon" type="image/png" href="assets/images/favicon.png">
   
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="assets/css/main.css?v=ux1">
-  <link rel="stylesheet" href="assets/css/components.css?v=ux1">
-  <link rel="stylesheet" href="assets/css/responsive.css?v=ux1">
-  <link rel="stylesheet" href="assets/css/pages/home.css?v=ux1">
+  <link rel="stylesheet" href="assets/css/main.css?v=resp1">
+  <link rel="stylesheet" href="assets/css/components.css?v=resp1">
+  <link rel="stylesheet" href="assets/css/responsive.css?v=resp1">
+  <link rel="stylesheet" href="assets/css/pages/home.css?v=track2">
 </head>
 <body>
   <!-- Header / Navigation -->
@@ -19,10 +20,14 @@
   <main id="app-content">
     <div class="container">
       
+      <p class="hub-area-banner" data-i18n="notice.firstPhase" style="margin: 12px 0 0;">
+        Testing focus: Bidar. All districts stay open — sample posts are for exhibition and testing.
+      </p>
+
       <!-- HERO SECTION -->
       <section class="hero-banner-wrapper">
         <img 
-          src="assets/images/placeholders/hero-bg.svg" 
+          src="assets/images/placeholders/hero-bg.jpg" 
           alt="" 
           class="hero-bg-image"
         >
@@ -39,8 +44,16 @@
         </div>
       </section>
 
+      <section class="home-track-bar" aria-label="Track request">
+        <p class="home-track-copy" data-i18n="home.trackLead">Already asked for help? Check status here.</p>
+        <div class="home-track-actions">
+          <a id="home-track-account" class="btn btn-primary" href="pages/services/customer.html?view=track" data-i18n="home.trackAccount">My requests</a>
+          <a id="home-track-guest" class="btn btn-outline" href="pages/services/track-request.html?guest=1" data-i18n="home.trackGuest">Guest track</a>
+        </div>
+      </section>
+
       <!-- SEARCH BAR -->
-      <section style="margin: -10px auto 40px; max-width: 860px;">
+      <section class="home-search-wrap">
         <form id="home-search-form" class="search-bar-composite">
           <input 
             type="text" 
@@ -53,32 +66,32 @@
         </form>
       </section>
 
-      <!-- THREE MAIN ENTRY CARDS -->
+      <!-- FOUR MAIN ENTRY DESTINATIONS -->
       <section class="entry-cards-grid">
-        <div class="entry-card">
-          <div class="entry-card-icon green" aria-hidden="true"></div>
+        <a href="pages/services/guest-request.html" class="entry-card">
+          <img class="entry-card-photo" src="assets/images/marketplace/daily.jpg" alt="" loading="lazy">
           <h2 class="entry-card-title" data-i18n="nav.daily">Daily services</h2>
-          <p class="entry-card-desc" data-i18n="home.services.body">Choose the service you need. KaamDo asks a suitable worker. A worker is not chosen until one accepts.</p>
-          <a href="pages/services/guest-request.html" class="btn btn-primary btn-block" data-i18n="home.requestService">Ask for a service</a>
-        </div>
-        <div class="entry-card">
-          <div class="entry-card-icon blue" aria-hidden="true"></div>
+          <p class="entry-card-desc" data-i18n="home.services.short">Ask for help near you.</p>
+          <span class="btn btn-primary btn-block" data-i18n="home.requestService">Ask for a service</span>
+        </a>
+        <a href="pages/jobs/jobs-list.html" class="entry-card">
+          <img class="entry-card-photo" src="assets/images/marketplace/jobs.jpg" alt="" loading="lazy">
           <h2 class="entry-card-title" data-i18n="nav.jobs">Jobs</h2>
-          <p class="entry-card-desc" data-i18n="page.jobs.body">Published jobs. The filters apply to the full list.</p>
-          <a href="pages/jobs/jobs-list.html" class="btn btn-primary btn-block" data-i18n="home.browseJobs">See jobs</a>
-        </div>
-        <div class="entry-card">
-          <div class="entry-card-icon orange" aria-hidden="true"></div>
+          <p class="entry-card-desc" data-i18n="page.jobs.short">See work near you.</p>
+          <span class="btn btn-primary btn-block" data-i18n="home.browseJobs">See jobs</span>
+        </a>
+        <a href="pages/equipment/equipment-list.html" class="entry-card">
+          <img class="entry-card-photo" src="assets/images/marketplace/equipment.jpg" alt="" loading="lazy">
           <h2 class="entry-card-title" data-i18n="nav.equipment">Equipment</h2>
-          <p class="entry-card-desc" data-i18n="page.equipment.body">Published listings. Asking about dates does not reserve the machine and does not take money.</p>
-          <a href="pages/equipment/equipment-list.html" class="btn btn-warning btn-block" data-i18n="home.rentEquipment">Rent equipment</a>
-        </div>
-        <div class="entry-card">
-          <div class="entry-card-icon green" aria-hidden="true"></div>
+          <p class="entry-card-desc" data-i18n="page.equipment.short">Rent machines near you.</p>
+          <span class="btn btn-warning btn-block" data-i18n="home.rentEquipment">Rent equipment</span>
+        </a>
+        <a href="pages/jobs/farm-jobs.html" class="entry-card">
+          <img class="entry-card-photo" src="assets/images/marketplace/farm.jpg" alt="" loading="lazy">
           <h2 class="entry-card-title" data-i18n="nav.farm">Farm hiring</h2>
-          <p class="entry-card-desc" data-i18n="page.farm.body">Published farm posts. They are not mixed into ordinary jobs.</p>
-          <a href="pages/jobs/farm-jobs.html" class="btn btn-secondary btn-block" data-i18n="page.farm.title">Farm jobs</a>
-        </div>
+          <p class="entry-card-desc" data-i18n="page.farm.short">See farm work near you.</p>
+          <span class="btn btn-secondary btn-block" data-i18n="page.farm.title">Farm jobs</span>
+        </a>
       </section>
 
       <section style="margin-bottom: 48px;">
@@ -99,10 +112,13 @@
   </main>
 
   <!-- Footer -->
-  <footer style="background-color: var(--surface-white); border-top: 1px solid var(--border-color); padding: 40px 0; margin-top: 60px;">
+  <footer class="site-footer" style="background-color: var(--surface-white); border-top: 1px solid var(--border-color); padding: 40px 0; margin-top: 48px;">
     <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
       <div>
-        <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary-green);">KaamDo</div>
+        <div style="display:flex; align-items:center; gap:10px; font-size: 1.25rem; font-weight: 800; color: var(--primary-green);">
+          <img src="assets/images/logo.png" alt="" width="36" height="36" style="object-fit:contain;">
+          KaamDo
+        </div>
         <p class="text-muted" style="font-size: 0.875rem;" data-i18n="home.footer">Local work, services, and equipment rental in Karnataka.</p>
       </div>
       <div style="font-size: 0.875rem; color: var(--neutral-gray);">
@@ -117,10 +133,11 @@
   <script src="assets/js/utils/dom.js"></script>
   <script src="assets/js/api/apiClient.js"></script>
   <script src="assets/js/api/authApi.js"></script>
-  <script src="assets/js/i18n/messages.js?v=lang5"></script>
+  <script src="assets/js/i18n/messages.js?v=track2"></script>
   <script src="assets/js/i18n/i18n.js?v=lang1"></script>
-  <script src="assets/js/components/navbar.js?v=nav3"></script>
-  <script src="assets/js/pages/homeLogic.js?v=services1"></script>
-  <script src="assets/js/pages/home.js?v=services1"></script>
+  <script src="assets/js/utils/images.js?v=real1"></script>
+  <script src="assets/js/components/navbar.js?v=real1"></script>
+  <script src="assets/js/pages/homeLogic.js?v=real1"></script>
+  <script src="assets/js/pages/home.js?v=track6"></script>
 </body>
 </html>

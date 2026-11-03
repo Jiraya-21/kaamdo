@@ -45,12 +45,17 @@ const dashboardHtml = fs.readFileSync(
   'utf8',
 );
 assert.match(dashboardHtml, /id="role-list"/);
-assert.match(dashboardHtml, /id="provider-status"/);
+assert.match(dashboardHtml, /id="marketplace-list"/);
+assert.match(dashboardHtml, /id="account-alert"/);
 assert.match(dashboardHtml, /id="test-payment-banner"/);
+assert.equal(dashboardHtml.includes('id="activity-list"'), false);
 assert.match(dashboardHtml, /account\/workspace\.js/);
+assert.match(dashboardHtml, /id="account-logout"/);
+assert.equal(dashboardHtml.includes('id="provider-status"'), false);
 assert.match(dashboardHtml, /providerStatus\.js/);
+assert.match(dashboardHtml, /utils\/images\.js/);
+assert.match(dashboardHtml, /favicon\.png/);
 assert.equal(dashboardHtml.includes('id="mode-switcher"'), false);
-assert.equal(dashboardHtml.includes('id="account-logout"'), false);
 assert.match(postHtml, /class="form-two-col"/);
 assert.match(postHtml, /account\/session\.js/);
 assert.equal(postHtml.includes('grid-template-columns:1fr 1fr'), false);

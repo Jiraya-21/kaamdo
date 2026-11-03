@@ -78,7 +78,7 @@ body {
   background-color: var(--background-page);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  padding-bottom: 60px; /* Space for mobile nav */
+  /* Mobile bottom-nav offset lives in responsive.css */
 }
 
 a {
@@ -111,9 +111,10 @@ input, button, select, textarea {
 /* Layout Utilities */
 .container {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 0 var(--spacing-md);
+  min-width: 0;
 }
 
 .text-center { text-align: center; }

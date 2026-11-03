@@ -122,7 +122,8 @@ class DailyAccountListTests(APITestCase):
         self.assertNotIn('access_key', body)
         self.assertNotIn('contact_email', body)
         self.assertNotIn('guest-account@example.com', body)
-        self.assertNotIn('payment', body)
+        self.assertIn('payment', row)
+        self.assertEqual(row['payment']['money_received'], False)
         self.assertNotIn(str(self.other_request.pk), [str(item['reference']) for item in response.data])
         self.assertEqual(self.payment_snapshot(), before)
 
@@ -134,12 +135,14 @@ class DailyAccountListTests(APITestCase):
         self.assertEqual(references, [self.other_request.pk])
         self.assertNotIn(self.guest_request.pk, references)
 
-    def test_anonymous_and_non_customer_cannot_list_requests(self):
+    def test_anonymous_cannot_list_requests_but_signed_in_provider_can(self):
+        """Marketplace access is any signed-in account; Customer is not a gate."""
         anonymous = self.client.get('/api/v1/workers/daily-requests/mine/')
         self.auth(self.worker['token'])
         provider = self.client.get('/api/v1/workers/daily-requests/mine/')
         self.assertEqual(anonymous.status_code, 401)
-        self.assertEqual(provider.status_code, 403)
+        self.assertEqual(provider.status_code, 200)
+        self.assertEqual(provider.data, [])
 
     def test_worker_sees_only_their_offers(self):
         before = self.payment_snapshot()
@@ -158,7 +161,8 @@ class DailyAccountListTests(APITestCase):
         self.assertEqual(offer['request']['description'], 'My ceiling fan.')
         self.assertNotIn('access_key', body)
         self.assertNotIn('contact_email', body)
-        self.assertNotIn('payment', body)
+        self.assertIn('payment', offer['request'])
+        self.assertEqual(offer['request']['payment']['money_received'], False)
         self.assertNotIn('latitude', body)
         self.assertEqual(self.payment_snapshot(), before)
 
@@ -251,7 +255,7 @@ class DailyAccountListTests(APITestCase):
             format='json',
         )
         self.assertEqual(created.status_code, 201)
-        self.assertEqual(created.data['status'], 'draft')
+        self.assertEqual(created.data['status'], 'awaiting_payment')
         self.assertEqual(created.data['category'], 'Electrician')
         self.assertNotIn('access_key', created.data)
         self.assertNotIn('assigned_profile', created.data)
@@ -264,8 +268,12 @@ class DailyAccountListTests(APITestCase):
         self.assertEqual(record.contact_email, '')
         self.assertEqual(record.access_key_hash, '')
         self.assertIsNone(record.assigned_profile_id)
-        self.assertEqual(VisitPayment.objects.filter(request=record).count(), 0)
-        self.assertEqual(self.payment_snapshot(), before)
+        self.assertEqual(VisitPayment.objects.filter(request=record).count(), 1)
+        self.assertEqual(
+            VisitPayment.objects.get(request=record).state,
+            VisitPayment.State.PENDING,
+        )
+        self.assertNotEqual(self.payment_snapshot(), before)
 
         inactive = self.client.post(
             '/api/v1/workers/daily-requests/mine/',
@@ -301,4 +309,18 @@ class DailyAccountListTests(APITestCase):
             },
             format='json',
         )
-        self.assertEqual(provider.status_code, 403)
+        self.assertEqual(provider.status_code, 201, provider.data)
+        self.assertEqual(provider.data['status'], DailyServiceRequest.Status.AWAITING_PAYMENT)
+        self.assertTrue(
+            DailyServiceRequest.objects.filter(
+                customer=self.worker['user'],
+                description='Replace a switch.',
+            ).exists()
+        )
+        self.assertEqual(
+            VisitPayment.objects.filter(
+                request__customer=self.worker['user'],
+                request__description='Replace a switch.',
+            ).count(),
+            1,
+        )

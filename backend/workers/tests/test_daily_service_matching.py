@@ -20,6 +20,7 @@ from workers.models import (
     WorkerProfile,
     get_active_visit_fee,
 )
+from workers.matching import current_search_radius, next_search_radius, radius_stages
 from workers.services import (
     create_service_offers,
     eligible_worker_profiles,
@@ -244,6 +245,25 @@ class MatchingServiceTests(APITestCase):
             raced = create_service_offers(self.request)
         self.assertEqual(ServiceOffer.objects.count(), 1)
         self.assertEqual(raced.created_offer_ids, ())
+
+    def test_customer_slider_caps_staged_search_without_changing_stages(self):
+        self.assertEqual(radius_stages(), (8, 15, 20))
+        self.request.radius_km = 60
+        self.request.search_radius_km = None
+        self.request.consented_radius_km = None
+        self.request.save(update_fields=['radius_km', 'search_radius_km', 'consented_radius_km'])
+        self.assertEqual(current_search_radius(self.request), 8)
+        self.request.search_radius_km = 8
+        self.request.save(update_fields=['search_radius_km'])
+        self.assertEqual(next_search_radius(self.request), 15)
+        self.request.search_radius_km = 20
+        self.request.save(update_fields=['search_radius_km'])
+        self.assertEqual(next_search_radius(self.request), 60)
+        self.request.radius_km = 5
+        self.request.search_radius_km = None
+        self.request.save(update_fields=['radius_km', 'search_radius_km'])
+        self.assertEqual(current_search_radius(self.request), 5)
+        self.assertIsNone(next_search_radius(self.request))
 
 
 class MatchingApiTests(APITestCase):

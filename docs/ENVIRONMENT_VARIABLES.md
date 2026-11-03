@@ -45,6 +45,8 @@ Copy-Item .env.example .env
 | `KAAMDO_CACHE_BACKEND` | `locmem` | Use `redis` only with more than one worker and a Redis URL. |
 | `KAAMDO_MAP_PROVIDER` | `none` | `osm` shows attribution only. Nominatim autocomplete is refused. |
 | `KAAMDO_MAP_ATTRIBUTION` | OpenStreetMap credit | Shown only when the provider is `osm`. |
+| `KAAMDO_GEOCODE_PROVIDER` | `nominatim_reverse` | Reverse-only OpenStreetMap lookup. Tests force `none`. Autocomplete is refused. |
+| `KAAMDO_GEOCODE_USER_AGENT` | KaamDo local UA | Required by Nominatim usage policy. |
 | `KAAMDO_ALLOW_SQLITE` | unset | Emergency local hatch. Not for a public site. |
 | Matching `KAAMDO_MATCH_*` | see `.env.example` | Straight-line km only. |
 

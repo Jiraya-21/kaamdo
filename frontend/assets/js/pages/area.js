@@ -1,5 +1,6 @@
 /**
- * One workspace. The page stays closed until GET /api/v1/auth/me/ confirms the role.
+ * One workspace. A professional role stays closed until GET /api/v1/auth/me/ confirms it.
+ * My service requests is open to any signed-in account.
  */
 
 const AreaPage = {
@@ -23,12 +24,26 @@ const AreaPage = {
     }
     const titleEl = document.getElementById('area-title');
     const contentEl = document.getElementById('area-content');
+    this.renderNav();
+    const activity = typeof AccountCatalog.activityForPage === 'function'
+      ? AccountCatalog.activityForPage(page)
+      : null;
+    if (activity) {
+      if (titleEl) titleEl.textContent = AccountCatalog.itemLabel(activity);
+      if (result.status === 'offline') {
+        this.showStatus(this.text('area.offline'));
+        return;
+      }
+      this.showStatus('');
+      contentEl.replaceChildren();
+      contentEl.appendChild(this.serviceRequestSection(activity, result.user));
+      return;
+    }
     const items = AccountCatalog.itemsForPage(page);
     const workspace = typeof AccountWorkspace === 'undefined'
       ? ''
       : AccountWorkspace.fromQuery(window.location.search);
     if (titleEl) titleEl.textContent = items.length ? items[0].groupTitle : this.text('area.accountArea');
-    this.renderNav();
     if (result.status === 'offline') {
       this.showStatus(this.text('area.offline'));
       return;
@@ -119,6 +134,35 @@ const AreaPage = {
     });
   },
 
+  serviceRequestSection(item, user) {
+    const card = document.createElement('article');
+    card.className = 'workspace-panel';
+    const heading = document.createElement('h2');
+    heading.className = 'visually-hidden';
+    heading.textContent = AccountCatalog.itemLabel(item);
+    const summary = document.createElement('p');
+    summary.className = 'text-muted workspace-lead';
+    const view = new URLSearchParams(window.location.search).get('view');
+    const trackView = view !== 'new';
+    summary.textContent = trackView
+      ? this.text('daily.trackNote')
+      : AccountCatalog.itemSummary(item);
+    card.append(heading, summary);
+    if (typeof DailyAccount !== 'undefined') DailyAccount.mountCustomer(card, user);
+    // Direct-provider list is not part of My requests / track.
+    if (!trackView && typeof ServiceRequestAccount !== 'undefined') {
+      const extra = document.createElement('details');
+      extra.className = 'account-details customer-direct';
+      const directSummary = document.createElement('summary');
+      directSummary.textContent = this.text('customer.directSummary');
+      const inner = document.createElement('div');
+      extra.append(directSummary, inner);
+      card.appendChild(extra);
+      ServiceRequestAccount.mountCustomer(inner);
+    }
+    return card;
+  },
+
   section(item, user) {
     const card = document.createElement('article');
     card.className = 'workspace-panel';
@@ -143,18 +187,6 @@ const AreaPage = {
       JobAccount.mountEmployer(card);
     } else if (item.code === 'job_seeker' && typeof JobAccount !== 'undefined') {
       JobAccount.mountSeeker(card);
-    } else if (item.code === 'customer' && typeof DailyAccount !== 'undefined') {
-      DailyAccount.mountCustomer(card, user);
-      if (typeof ServiceRequestAccount !== 'undefined') {
-        const extra = document.createElement('details');
-        extra.className = 'account-details customer-direct';
-        const summary = document.createElement('summary');
-        summary.textContent = this.text('customer.directSummary');
-        const inner = document.createElement('div');
-        extra.append(summary, inner);
-        card.appendChild(extra);
-        ServiceRequestAccount.mountCustomer(inner);
-      }
     } else if (item.code === 'service_provider') {
       if (typeof ServiceRequestAccount !== 'undefined') ServiceRequestAccount.mountProvider(card, user);
     } else {

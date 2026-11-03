@@ -16,8 +16,30 @@ const DailyAccountLogic = {
     return `/workers/daily-requests/${reference}/mock-payment/`;
   },
 
+  extraPaymentPath(reference) {
+    return `/workers/daily-requests/${reference}/mock-extra-payment/`;
+  },
+
+  extrasPath(reference) {
+    return `/workers/daily-requests/${reference}/extras/`;
+  },
+
+  priceMenuPath() {
+    return '/workers/price-menu/';
+  },
+
   canSkipPayment(status) {
     return status === 'draft' || status === 'awaiting_payment';
+  },
+
+  canPayInspection(row) {
+    const payment = row && row.payment;
+    return Boolean(payment && payment.can_pay_inspection && payment.mock_checkout);
+  },
+
+  canPayExtras(row) {
+    const payment = row && row.payment;
+    return Boolean(payment && payment.can_pay_extras && payment.mock_checkout);
   },
 
   testPaymentEnabled(user) {
@@ -49,9 +71,12 @@ const DailyAccountLogic = {
   },
 
   requestPayload(values) {
+    const place = typeof LocationFields === 'undefined'
+      ? this.clean(values.place)
+      : LocationFields.placeLabel(values.street, values.place, values.taluk, values.district, values.pin);
     const payload = {
       category: Number(values.categoryId),
-      description: this.workDescription(values.place, values.description),
+      description: this.workDescription(place, values.description),
       latitude: this.coordinateText(values.latitude),
       longitude: this.coordinateText(values.longitude),
     };
@@ -80,15 +105,16 @@ const DailyAccountLogic = {
     }
     if (this.clean(values.radiusKm)) {
       const radius = Number(values.radiusKm);
-      if (!Number.isInteger(radius) || radius < 8 || radius > 50) {
-        problems.push('Choose a radius from 8 to 50 kilometres.');
+      if (!Number.isInteger(radius) || radius < 5 || radius > 100 || radius % 5 !== 0) {
+        problems.push('Choose a radius from 5 to 100 kilometres.');
       }
     }
     return problems;
   },
 
   createResult(data) {
-    if (!data || data.reference == null || data.status !== 'draft') {
+    const status = data && data.status;
+    if (!data || data.reference == null || (status !== 'awaiting_payment' && status !== 'draft')) {
       return { ok: false, text: 'The request was not confirmed. No worker was assigned.' };
     }
     if (Object.hasOwn(data, 'access_key') || Object.hasOwn(data, 'assigned_profile')) {
@@ -97,16 +123,19 @@ const DailyAccountLogic = {
     return {
       ok: true,
       reference: data.reference,
-      text: 'Request saved. No worker is assigned yet. This did not collect money.',
+      status,
+      payment: data.payment || null,
+      nextStep: data.next_step || 'pay_inspection_fee',
+      text: 'Request saved. Pay the inspection fee next. Workers are offered only after that fee.',
     };
   },
 
   statusSentence(status, workerName) {
     const name = workerName ? String(workerName) : '';
     const sentences = {
-      draft: 'Saved. No worker is assigned yet.',
-      awaiting_payment: 'Waiting for a recorded payment. No worker is assigned yet.',
-      dispatch_pending: 'Ready to offer after a recorded payment. No worker is assigned yet.',
+      draft: 'Saved. Verify, then pay the inspection fee. No worker yet.',
+      awaiting_payment: 'Pay the inspection fee. No worker is offered yet.',
+      dispatch_pending: 'Inspection fee recorded. Ready to offer to workers. No worker has accepted yet.',
       no_workers: 'No eligible worker is in range. No worker is assigned.',
       offering: 'Offered to eligible workers. No worker has accepted yet.',
       assigned: name ? `A worker accepted: ${name}.` : 'A worker accepted.',
@@ -140,6 +169,76 @@ const DailyAccountLogic = {
     return `/workers/daily-requests/${reference}/cancel/`;
   },
 
+  arrivalSignalPath(reference) {
+    return `/workers/daily-requests/${reference}/arrival/signal/`;
+  },
+
+  arrivalVerifyPath(reference) {
+    return `/workers/daily-requests/${reference}/arrival/verify/`;
+  },
+
+  completePath(reference) {
+    return `/workers/daily-requests/${reference}/complete/`;
+  },
+
+  arrivalCodePayload(code) {
+    return { code: String(code == null ? '' : code).replace(/\s+/g, '') };
+  },
+
+  canSignalArrival(offer) {
+    return Boolean(
+      offer
+      && offer.state === 'accepted'
+      && offer.request
+      && offer.request.status === 'assigned'
+      && offer.request.reference != null
+    );
+  },
+
+  canVerifyArrival(status) {
+    return status === 'assigned';
+  },
+
+  canComplete(status, arrivalVerifiedAt) {
+    return status === 'in_progress' && Boolean(arrivalVerifiedAt);
+  },
+
+  optionalNumber(value) {
+    if (value == null || value === '') return null;
+    const number = Number(value);
+    if (!Number.isFinite(number) || number < 0) return null;
+    return number;
+  },
+
+  identityFrom(row) {
+    const primary = row && row.worker_identity && typeof row.worker_identity === 'object'
+      ? row.worker_identity
+      : null;
+    const extra = row && row.assigned_profile && typeof row.assigned_profile === 'object'
+      ? row.assigned_profile
+      : null;
+    const card = primary || extra;
+    if (!card) return null;
+    const photo = String(card.photo_url || '').trim();
+    const skills = Array.isArray(card.skills) && card.skills.length
+      ? card.skills
+      : (extra && Array.isArray(extra.skills) ? extra.skills : []);
+    return {
+      id: card.profile_id != null ? card.profile_id : (card.id != null ? card.id : (extra && extra.id)),
+      worker_id: card.worker_id ? String(card.worker_id) : '',
+      display_name: String(card.display_name || (extra && extra.display_name) || ''),
+      photo_url: /^https?:\/\//i.test(photo) ? photo : '',
+      main_category: card.main_category ? String(card.main_category) : '',
+      skills: skills.map(String),
+      district: String(card.district || (extra && extra.district) || ''),
+      locality: String(card.locality || (extra && extra.locality) || ''),
+      identity_verified: card.identity_verified === true,
+      identity_verification: card.identity_verification ? String(card.identity_verification) : '',
+      experience_years: this.optionalNumber(card.experience_years),
+      completed_jobs: this.optionalNumber(card.completed_jobs),
+    };
+  },
+
   rowsFrom(data) {
     if (Array.isArray(data)) return data;
     if (data && Array.isArray(data.results)) return data.results;
@@ -158,16 +257,12 @@ const DailyAccountLogic = {
       can_expand: row && row.can_expand === true,
       expand_to_km: row && row.expand_to_km == null ? null : Number(row.expand_to_km),
       created_at: row && row.created_at ? String(row.created_at) : '',
+      arrival_verified_at: row && row.arrival_verified_at ? String(row.arrival_verified_at) : '',
     };
-    const card = row && row.assigned_profile;
-    if (card && typeof card === 'object') {
-      view.assigned_profile = {
-        id: card.id,
-        display_name: card.display_name ? String(card.display_name) : '',
-        skills: Array.isArray(card.skills) ? card.skills.map(String) : [],
-        district: card.district ? String(card.district) : '',
-        locality: card.locality ? String(card.locality) : '',
-      };
+    const identity = this.identityFrom(row);
+    if (identity) {
+      view.worker_identity = identity;
+      view.assigned_profile = identity;
     }
     return view;
   },
@@ -222,6 +317,10 @@ const DailyAccountLogic = {
     if (error.status === 401) return 'Sign in again. Nothing was changed.';
     const data = error.data;
     if (data && typeof data.detail === 'string') return data.detail;
+    if (data && data.code) {
+      const code = Array.isArray(data.code) ? data.code.join(' ') : String(data.code);
+      if (code && code !== '[object Object]') return code;
+    }
     if (data && data.decision) {
       const decision = Array.isArray(data.decision) ? data.decision.join(' ') : String(data.decision);
       return decision;

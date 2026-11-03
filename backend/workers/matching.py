@@ -65,7 +65,7 @@ def match_max_rounds():
 
 
 def match_max_radius():
-    return int(getattr(settings, 'KAAMDO_MATCH_MAX_RADIUS_KM', 50))
+    return int(getattr(settings, 'KAAMDO_MATCH_MAX_RADIUS_KM', 100))
 
 
 def radius_stages():
@@ -76,7 +76,7 @@ def radius_stages():
             value = int(item)
         except (TypeError, ValueError):
             continue
-        if 8 <= value <= match_max_radius() and value not in cleaned:
+        if 5 <= value <= match_max_radius() and value not in cleaned:
             cleaned.append(value)
     return tuple(cleaned or (8, 15, 20))
 
@@ -490,8 +490,8 @@ def consent_to_expand(request, radius_km):
         radius = int(radius_km)
     except (TypeError, ValueError):
         raise ValidationError({'radius_km': 'Choose a whole number of kilometres.'})
-    if radius < 8 or radius > match_max_radius():
-        raise ValidationError({'radius_km': f'Choose a radius from 8 to {match_max_radius()} kilometres.'})
+    if radius < 5 or radius > match_max_radius():
+        raise ValidationError({'radius_km': f'Choose a radius from 5 to {match_max_radius()} kilometres.'})
     if radius <= agreed_radius(request):
         raise ValidationError({
             'radius_km': 'The wider search must be larger than the original radius you already chose.',

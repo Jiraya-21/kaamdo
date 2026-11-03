@@ -3,48 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="title.account">Account - KaamDo</title>
-  <link rel="stylesheet" href="../../assets/css/main.css?v=ux2">
-  <link rel="stylesheet" href="../../assets/css/components.css?v=ux2">
-  <link rel="stylesheet" href="../../assets/css/responsive.css?v=ux2">
-  <link rel="stylesheet" href="../../assets/css/pages/dashboard.css?v=ux2">
+  <title data-i18n="title.account">Your KaamDo - KaamDo</title>
+  <link rel="icon" type="image/png" href="../../assets/images/favicon.png">
+  <link rel="stylesheet" href="../../assets/css/main.css?v=resp1">
+  <link rel="stylesheet" href="../../assets/css/components.css?v=resp1">
+  <link rel="stylesheet" href="../../assets/css/responsive.css?v=resp1">
+  <link rel="stylesheet" href="../../assets/css/pages/dashboard.css?v=resp1">
 </head>
 <body>
   <div id="navbar-container"></div>
 
   <main id="app-content">
-    <div class="container account-shell">
-      <div class="account-header account-identity">
-        <div class="account-avatar" id="account-avatar">
-          <img id="account-photo" alt="" hidden>
-          <span id="account-initials" class="account-initials" aria-hidden="true"></span>
+    <div class="container account-hub">
+      <header class="account-bar">
+        <div class="account-bar-identity">
+          <div class="account-avatar account-avatar--sm" id="account-avatar">
+            <img id="account-photo" alt="" hidden>
+            <span id="account-initials" class="account-initials" aria-hidden="true"></span>
+          </div>
+          <div class="account-bar-copy">
+            <h1 id="dashboard-name" class="account-bar-name">Your account</h1>
+            <p id="dashboard-profile" class="account-bar-phone"></p>
+          </div>
         </div>
-        <div>
-          <h1 id="dashboard-name">Your account</h1>
-          <p id="dashboard-profile" class="text-muted"></p>
-        </div>
-      </div>
-      <p id="dashboard-status" class="account-status" role="status"></p>
-      <p id="test-payment-banner" class="test-mode-banner" hidden role="status"></p>
-      <button type="button" id="session-retry" class="btn btn-primary" hidden data-i18n="account.retry">Try again</button>
-      <section id="provider-status" class="provider-status" hidden></section>
+        <button type="button" id="account-logout" class="btn btn-outline btn-sm" data-i18n="account.logout">Log out</button>
+      </header>
 
-      <section class="account-group">
-        <h2 data-i18n="workspace.roles">Your workspaces</h2>
-        <p class="text-muted" data-i18n="workspace.rolesBody">Open one role at a time. This does not create a new account.</p>
-        <div id="role-list" class="role-list"></div>
+      <p id="first-area-banner" class="hub-area-banner" data-i18n="hub.firstArea">Testing focus: Bidar. All districts stay open — sample posts are for exhibition and testing.</p>
+
+      <div id="account-alert" class="account-alert" hidden role="alert">
+        <p id="dashboard-status" class="account-alert-text"></p>
+        <button type="button" id="session-retry" class="btn btn-primary btn-sm" hidden data-i18n="account.retry">Try again</button>
+      </div>
+
+      <p id="test-payment-banner" class="test-mode-banner" hidden role="status"></p>
+
+      <div id="hub-availability" class="account-block" hidden></div>
+
+      <section class="account-block" aria-labelledby="need-heading">
+        <h2 id="need-heading" data-i18n="hub.needTitle">What do you need?</h2>
+        <nav id="marketplace-list" class="marketplace-grid" aria-label="What do you need?"></nav>
       </section>
 
-      <details class="account-group account-details">
-        <summary data-i18n="workspace.add">Add another role</summary>
-        <p class="text-muted" data-i18n="workspace.addBody">Uses the same mobile number. Approval may still be required.</p>
-        <div id="capability-adder" class="account-actions"></div>
+      <section class="account-block" id="roles-block" aria-labelledby="roles-heading" hidden>
+        <h2 id="roles-heading" data-i18n="hub.roles">Your work</h2>
+        <ul id="role-list" class="hub-list"></ul>
+      </section>
+
+      <details class="account-block account-fold" id="add-role-block">
+        <summary data-i18n="hub.addTitle">Add work</summary>
+        <div id="capability-adder" class="hub-add-list"></div>
       </details>
 
-      <details class="account-group account-details">
+      <details class="account-block account-fold" id="notify-block" hidden>
         <summary data-i18n="notify.title">Updates</summary>
-        <p id="notification-status" class="text-muted" data-i18n="notify.loading">Loading updates...</p>
-        <div id="notification-list"></div>
+        <p id="notification-status" class="hub-muted" hidden></p>
+        <div id="notification-list" class="hub-notify-list"></div>
       </details>
     </div>
   </main>
@@ -53,15 +67,15 @@
   <script src="../../assets/js/utils/storage.js"></script>
   <script src="../../assets/js/api/apiClient.js"></script>
   <script src="../../assets/js/api/authApi.js"></script>
-  <script src="../../assets/js/account/catalog.js"></script>
+  <script src="../../assets/js/account/catalog.js?v=role1"></script>
   <script src="../../assets/js/account/workspace.js"></script>
   <script src="../../assets/js/account/session.js"></script>
-  <script src="../../assets/js/pages/serviceRequestAccountLogic.js"></script>
-  <script src="../../assets/js/pages/providerStatusLogic.js"></script>
-  <script src="../../assets/js/pages/providerStatus.js"></script>
-  <script src="../../assets/js/i18n/messages.js?v=ux2"></script>
+  <script src="../../assets/js/utils/images.js?v=real1"></script>
+  <script src="../../assets/js/pages/providerStatusLogic.js?v=hub1"></script>
+  <script src="../../assets/js/pages/providerStatus.js?v=real1"></script>
+  <script src="../../assets/js/i18n/messages.js?v=role1"></script>
   <script src="../../assets/js/i18n/i18n.js?v=lang1"></script>
-  <script src="../../assets/js/components/navbar.js?v=ux1"></script>
-  <script src="../../assets/js/pages/dashboard.js?v=ux2"></script>
+  <script src="../../assets/js/components/navbar.js?v=real1"></script>
+  <script src="../../assets/js/pages/dashboard.js?v=role1"></script>
 </body>
 </html>

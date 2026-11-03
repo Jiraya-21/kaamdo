@@ -7,6 +7,7 @@ It is not the distance by road.
 
 import math
 from dataclasses import dataclass
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -14,12 +15,14 @@ from django.db import IntegrityError, transaction
 from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 
-from accounts.models import AccountCapability
+from accounts.models import AccountCapability, OtpPurpose, guest_phone_is_verified, normalize_phone
 from locations.places import place_taluk
 
 from .models import (
     DailyServiceRequest,
+    RequestExtraCharge,
     ServiceOffer,
+    ServicePriceMenuItem,
     ServiceProviderVerification,
     VisitPayment,
     WorkerProfile,
@@ -136,7 +139,7 @@ def create_service_offers(daily_request):
 
 
 TEST_VISIT_PAYMENT_VALUES = frozenset({'mock_demo', 'test_bypass'})
-TEST_PAYMENT_LABEL = 'TEST MODE — Payment skipped; no money collected.'
+TEST_PAYMENT_LABEL = 'Inspection fee paid. Workers can be offered now.'
 
 
 def mock_visit_payment_enabled():
@@ -145,7 +148,7 @@ def mock_visit_payment_enabled():
 
 
 def test_visit_payment_enabled():
-    """Staff test skip. Off by default. Refuses when DEBUG is False. Not a real payment."""
+    """Mock checkout. Off by default. Refuses when DEBUG is False. Not a real payment."""
     if settings.DEBUG is not True:
         return False
     value = str(getattr(settings, 'KAAMDO_VISIT_PAYMENT', 'unconfigured') or '').strip().lower()
@@ -157,13 +160,204 @@ def test_payment_public_payload():
         'enabled': True,
         'label': TEST_PAYMENT_LABEL,
         'money_received': False,
+        'provider': 'razorpay_mock',
     }
 
 
+def price_menu_payload():
+    """Public company menu: inspection fee + extra work items."""
+    fee = get_active_visit_fee()
+    inspection = {
+        'title': 'Inspection fee',
+        'description': 'Worker visits and checks the work. Paid before a worker is offered.',
+        'amount_inr': format(fee.amount_inr, 'f') if fee else '99.00',
+        'currency': 'INR',
+        'kind': 'inspection',
+        'code': 'inspection-fee',
+    }
+    extras = []
+    for item in ServicePriceMenuItem.objects.filter(is_active=True, kind=ServicePriceMenuItem.Kind.EXTRA):
+        extras.append({
+            'id': item.pk,
+            'code': item.code,
+            'title': item.title,
+            'description': item.description,
+            'amount_inr': format(item.amount_inr, 'f'),
+            'currency': 'INR',
+            'kind': item.kind,
+        })
+    return {
+        'inspection_fee': inspection,
+        'extras': extras,
+        'mock_checkout': mock_visit_payment_enabled(),
+        'money_received': False,
+        'provider_label': 'Pay inspection fee' if mock_visit_payment_enabled() else '',
+        'steps': [
+            'Pay the inspection fee to confirm the visit.',
+            'Worker checks the work at the place.',
+            'If more work is needed, worker adds items from this menu.',
+            'Pay any extras. Then the work can finish.',
+        ],
+    }
+
+
+def payment_snapshot(record):
+    """Inspection + extras payment fields for track / account screens."""
+    fee = get_active_visit_fee()
+    payment = VisitPayment.objects.filter(request_id=record.pk).first()
+    extras = list(
+        RequestExtraCharge.objects.filter(request_id=record.pk)
+        .exclude(state=RequestExtraCharge.State.CANCELLED)
+    )
+    proposed = [row for row in extras if row.state == RequestExtraCharge.State.PROPOSED]
+    paid_extras = [row for row in extras if row.state == RequestExtraCharge.State.MOCK_PAID]
+    can_pay_inspection = mock_visit_payment_enabled() and record.status in (
+        DailyServiceRequest.Status.DRAFT,
+        DailyServiceRequest.Status.AWAITING_PAYMENT,
+    )
+    can_pay_extras = mock_visit_payment_enabled() and bool(proposed)
+    return {
+        'inspection_fee_inr': format(fee.amount_inr, 'f') if fee else None,
+        'inspection_label': 'Inspection fee',
+        'payment_state': payment.state if payment else None,
+        'payment_amount_inr': format(payment.amount_inr, 'f') if payment else None,
+        'mock_checkout': mock_visit_payment_enabled(),
+        'can_pay_inspection': can_pay_inspection,
+        'can_pay_extras': can_pay_extras,
+        'money_received': False,
+        'provider_label': 'Pay inspection fee' if mock_visit_payment_enabled() else '',
+        'extras': [
+            {
+                'id': row.pk,
+                'title': row.title,
+                'amount_inr': format(row.amount_inr, 'f'),
+                'state': row.state,
+            }
+            for row in extras
+        ],
+        'extras_due_inr': format(
+            sum((row.amount_inr for row in proposed), Decimal('0.00')),
+            'f',
+        ),
+        'extras_paid_inr': format(
+            sum((row.amount_inr for row in paid_extras), Decimal('0.00')),
+            'f',
+        ),
+    }
+
+
+def user_may_mock_pay_request(user, record):
+    if user is None or not getattr(user, 'is_authenticated', False):
+        return False
+    if getattr(user, 'is_staff', False):
+        return True
+    return record.customer_id is not None and record.customer_id == user.id
+
+
+def propose_request_extras(record, user, menu_item_ids):
+    """Assigned worker picks company-menu extras after inspection."""
+    if record.status not in (
+        DailyServiceRequest.Status.ASSIGNED,
+        DailyServiceRequest.Status.IN_PROGRESS,
+    ):
+        raise ValidationError({'status': 'Extras can be added only after a worker is assigned.'})
+    profile = getattr(record, 'assigned_profile', None)
+    if profile is None or profile.user_id != user.id:
+        raise ValidationError({'detail': 'Only the assigned worker can add extras from the menu.'})
+    ids = []
+    for raw in menu_item_ids or []:
+        try:
+            ids.append(int(raw))
+        except (TypeError, ValueError):
+            raise ValidationError({'items': 'Choose items from the company price menu.'}) from None
+    if not ids:
+        raise ValidationError({'items': 'Choose at least one menu item.'})
+    items = list(
+        ServicePriceMenuItem.objects.filter(
+            pk__in=ids,
+            is_active=True,
+            kind=ServicePriceMenuItem.Kind.EXTRA,
+        )
+    )
+    if len(items) != len(set(ids)):
+        raise ValidationError({'items': 'One or more menu items are not available.'})
+    created = []
+    with transaction.atomic():
+        locked = DailyServiceRequest.objects.select_for_update().get(pk=record.pk)
+        for item in items:
+            created.append(
+                RequestExtraCharge.objects.create(
+                    request=locked,
+                    menu_item=item,
+                    title=item.title,
+                    amount_inr=item.amount_inr,
+                    state=RequestExtraCharge.State.PROPOSED,
+                    proposed_by=user,
+                )
+            )
+    return created
+
+
+def record_mock_extra_payment(record):
+    """Mark proposed extras as mock paid. Does not receive money."""
+    if not mock_visit_payment_enabled():
+        raise ValidationError({'detail': 'Mock visit payment is not enabled. No payment was recorded.'})
+    with transaction.atomic():
+        locked = DailyServiceRequest.objects.select_for_update().get(pk=record.pk)
+        rows = list(
+            RequestExtraCharge.objects.select_for_update().filter(
+                request=locked,
+                state=RequestExtraCharge.State.PROPOSED,
+            )
+        )
+        if not rows:
+            raise ValidationError({'detail': 'No extra charges are waiting for payment.'})
+        now = timezone.now()
+        for row in rows:
+            row.state = RequestExtraCharge.State.MOCK_PAID
+            row.paid_at = now
+            row.save(update_fields=['state', 'paid_at'])
+        return rows
+
+
+def prepare_inspection_payment(daily_request):
+    """After contact verification + booking: wait for inspection fee before any worker offer.
+
+    Stops empty draft bookings from looking ready. Does not receive money and does not match workers.
+    """
+    fee = get_active_visit_fee()
+    with transaction.atomic():
+        locked = DailyServiceRequest.objects.select_for_update().get(pk=daily_request.pk)
+        if locked.status not in (
+            DailyServiceRequest.Status.DRAFT,
+            DailyServiceRequest.Status.AWAITING_PAYMENT,
+        ):
+            daily_request.status = locked.status
+            return locked, VisitPayment.objects.filter(request_id=locked.pk).first()
+        if locked.status == DailyServiceRequest.Status.DRAFT:
+            locked.transition_to(DailyServiceRequest.Status.AWAITING_PAYMENT)
+        payment = VisitPayment.objects.select_for_update().filter(request=locked).first()
+        if payment is None:
+            if fee is None:
+                raise ValidationError({'detail': 'No active inspection fee is configured.'})
+            payment = VisitPayment(
+                request=locked,
+                amount_inr=fee.amount_inr,
+                currency='INR',
+                state=VisitPayment.State.PENDING,
+                verification_source=VisitPayment.Source.NONE,
+            )
+            payment.full_clean()
+            payment.save()
+        daily_request.status = locked.status
+        return locked, payment
+
+
 def record_mock_visit_progress(daily_request):
-    """Record a mock demo payment and move a draft request to ready-to-offer.
+    """Record a mock demo payment and move a draft/awaiting request to ready-to-offer.
 
     This does not receive money, verify a gateway payment, match workers, or assign anyone.
+    Call only after the booking contact was verified and prepare_inspection_payment ran (or draft).
     """
     if not mock_visit_payment_enabled():
         raise ValidationError({'detail': 'Mock visit payment is not enabled. No payment was recorded.'})
@@ -215,6 +409,21 @@ def record_mock_visit_progress(daily_request):
         return locked, payment
 
 
+def offer_workers_after_inspection_fee(daily_request):
+    """After the inspection fee is recorded, start offering eligible workers.
+
+    Matching used to wait for a separate cron loop, which felt broken after pay.
+    Safe to call repeatedly. Does not take money.
+    """
+    from .matching import advance_matching
+
+    if daily_request.status != DailyServiceRequest.Status.DISPATCH_PENDING:
+        return daily_request
+    advance_matching(daily_request)
+    daily_request.refresh_from_db()
+    return daily_request
+
+
 def _mock_payment_is_demo(payment):
     return (
         payment is not None
@@ -225,7 +434,8 @@ def _mock_payment_is_demo(payment):
 
 
 def _mock_progress_is_complete(daily_request, payment):
-    return daily_request.status == DailyServiceRequest.Status.DISPATCH_PENDING and _mock_payment_is_demo(payment)
+    # Fee already recorded. Matching may have moved the request past dispatch_pending.
+    return _mock_payment_is_demo(payment)
 
 
 def _mock_progress_can_continue(daily_request, payment):
@@ -455,19 +665,19 @@ def _offer_for_pair(daily_request, profile):
         return offer, False
 
 
-def assigned_worker_card(record):
-    """A limited worker card. It omits contact details, coordinates, and verification."""
-    profile = record.assigned_profile
-    if record.status not in DailyServiceRequest.ASSIGNED_STATUSES or profile is None:
+def assigned_worker_card(record, *, request=None):
+    """Digital Worker ID card after assignment. Omits phone, documents, and invented ratings."""
+    from .identity import assigned_request_identity_card
+
+    card = assigned_request_identity_card(record, request=request)
+    if card is None:
         return None
-    return {
-        'id': profile.pk,
-        'display_name': profile.display_name,
-        'skills': list(profile.skills.order_by('name').values_list('name', flat=True)),
-        'district': profile.district,
-        'taluk': place_taluk(profile),
-        'locality': profile.locality,
-    }
+    # Keep legacy keys used by existing clients and tests.
+    card['id'] = card.get('profile_id')
+    profile = record.assigned_profile
+    if profile is not None:
+        card['taluk'] = place_taluk(profile)
+    return card
 
 
 def customer_daily_requests(user):
@@ -479,8 +689,8 @@ def customer_daily_requests(user):
     )
 
 
-def customer_daily_request_payload(record):
-    """Fields a customer may see for their own request. No access key and no payment."""
+def customer_daily_request_payload(record, *, request=None):
+    """Fields a request owner may see for their own request. No access key."""
     from .matching import matching_public_fields
 
     payload = {
@@ -490,11 +700,14 @@ def customer_daily_request_payload(record):
         'status': record.status,
         'radius_km': record.radius_km,
         'created_at': record.created_at,
+        'arrival_verified_at': getattr(record, 'arrival_verified_at', None),
     }
     payload.update(matching_public_fields(record))
-    card = assigned_worker_card(record)
+    payload['payment'] = payment_snapshot(record)
+    card = assigned_worker_card(record, request=request)
     if card is not None:
         payload['assigned_profile'] = card
+        payload['worker_identity'] = card
     return payload
 
 
@@ -509,6 +722,7 @@ def provider_daily_offers(user):
 def provider_offer_payload(offer):
     """Offer state plus the request summary needed to accept or decline. No guest secrets."""
     record = offer.request
+    payment = payment_snapshot(record)
     return {
         'id': offer.pk,
         'state': offer.state,
@@ -521,11 +735,16 @@ def provider_offer_payload(offer):
             'description': record.description,
             'status': record.status,
             'radius_km': record.radius_km,
+            'payment': payment,
+            'can_propose_extras': record.status in (
+                DailyServiceRequest.Status.ASSIGNED,
+                DailyServiceRequest.Status.IN_PROGRESS,
+            ),
         },
     }
 
 
-def describe_guest_request(reference, access_key):
+def describe_guest_request(reference, access_key, *, request=None):
     """Return a guest's request status after the access key matches. The number alone is not enough."""
     if isinstance(reference, bool) or not isinstance(reference, (int, str)):
         raise DailyServiceRequest.DoesNotExist
@@ -535,21 +754,92 @@ def describe_guest_request(reference, access_key):
         raise DailyServiceRequest.DoesNotExist
     record = (
         DailyServiceRequest.objects.filter(pk=pk)
-        .select_related('assigned_profile', 'assigned_profile__user')
-        .prefetch_related('assigned_profile__skills')
+        .select_related('assigned_profile', 'assigned_profile__user', 'category')
+        .prefetch_related('assigned_profile__skills', 'assigned_profile__service_categories')
         .first()
     )
     if record is None or not record.check_access_key(access_key):
         raise DailyServiceRequest.DoesNotExist
+    return guest_track_payload(record, request=request)
+
+
+def guest_track_payload(record, *, request=None):
+    """Public track fields for one request. No access key, no raw contact."""
     from .matching import matching_public_fields
 
     payload = {
         'reference': record.pk,
+        'category': record.category.name if record.category_id else '',
+        'description': record.description,
         'status': record.status,
         'radius_km': record.radius_km,
+        'created_at': record.created_at,
+        'arrival_verified_at': getattr(record, 'arrival_verified_at', None),
     }
     payload.update(matching_public_fields(record))
-    card = assigned_worker_card(record)
+    payload['payment'] = payment_snapshot(record)
+    card = assigned_worker_card(record, request=request)
     if card is not None:
         payload['assigned_profile'] = card
+        payload['worker_identity'] = card
     return payload
+
+
+def phone_controls_daily_request(record, phone):
+    """True when a recently verified mobile number owns this request."""
+    phone = normalize_phone(phone)
+    if not phone or not guest_phone_is_verified(phone, OtpPurpose.SERVICE_REQUEST):
+        return False
+    contact = normalize_phone(getattr(record, 'contact_phone', '') or '')
+    if contact and contact == phone:
+        return True
+    customer = getattr(record, 'customer', None)
+    if customer is not None and normalize_phone(getattr(customer, 'phone_number', '') or '') == phone:
+        return True
+    return False
+
+
+def list_requests_for_verified_phone(phone, *, request=None):
+    """All requests tied to a mobile number after that number passed the guest OTP check.
+
+    Guests no longer need to remember a request id or secret code.
+    """
+    phone = normalize_phone(phone)
+    if not phone:
+        raise ValidationError({'phone_number': 'Enter a 10-digit Indian mobile number.'})
+    if not guest_phone_is_verified(phone, OtpPurpose.SERVICE_REQUEST):
+        raise ValidationError({
+            'phone_number': 'Verify this mobile number with a code before tracking.',
+        })
+    records = (
+        DailyServiceRequest.objects.filter(
+            Q(contact_phone=phone) | Q(customer__phone_number=phone)
+        )
+        .select_related('assigned_profile', 'assigned_profile__user', 'category', 'customer')
+        .prefetch_related('assigned_profile__skills', 'assigned_profile__service_categories')
+        .order_by('-created_at', '-pk')
+    )
+    return [guest_track_payload(record, request=request) for record in records]
+
+
+def resolve_guest_owned_request(reference, *, access_key='', phone=''):
+    """Resolve one guest/account request by access key or by a verified mobile number."""
+    if isinstance(reference, bool) or not isinstance(reference, (int, str)):
+        raise DailyServiceRequest.DoesNotExist
+    try:
+        pk = int(reference)
+    except (TypeError, ValueError):
+        raise DailyServiceRequest.DoesNotExist
+    record = (
+        DailyServiceRequest.objects.filter(pk=pk)
+        .select_related('assigned_profile', 'assigned_profile__user', 'category', 'customer')
+        .prefetch_related('assigned_profile__skills', 'assigned_profile__service_categories')
+        .first()
+    )
+    if record is None:
+        raise DailyServiceRequest.DoesNotExist
+    if access_key and record.check_access_key(access_key):
+        return record
+    if phone and phone_controls_daily_request(record, phone):
+        return record
+    raise DailyServiceRequest.DoesNotExist

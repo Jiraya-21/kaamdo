@@ -100,6 +100,23 @@ const EquipmentAccount = {
 
   listingBlock(listing, bookings, inquiries) {
     const block = document.createElement('section');
+    block.className = 'card';
+    block.style.padding = '12px';
+    block.style.marginBottom = '16px';
+    const header = document.createElement('div');
+    header.className = 'listing-card';
+    header.style.marginBottom = '0';
+    const media = document.createElement('div');
+    media.className = 'listing-card-media';
+    const image = document.createElement('img');
+    image.src = typeof KaamdoImages !== 'undefined'
+      ? KaamdoImages.equipmentPhoto(listing.photo_url)
+      : '../../assets/images/placeholders/tractor-default.jpg';
+    image.alt = listing.title || '';
+    image.loading = 'lazy';
+    media.appendChild(image);
+    const body = document.createElement('div');
+    body.className = 'listing-card-body';
     const title = document.createElement('h3');
     title.textContent = listing.title;
     const meta = document.createElement('p');
@@ -107,7 +124,9 @@ const EquipmentAccount = {
     const publicListing = listing.status === 'published'
       && (listing.fee_status === 'paid' || listing.fee_status === 'waived');
     meta.textContent = publicListing ? this.text('equip.publicListing') : this.text('equip.notPublic');
-    block.append(title, meta);
+    body.append(title, meta);
+    header.append(media, body);
+    block.appendChild(header);
     if (!bookings.length && !inquiries.length) {
       const empty = document.createElement('p');
       empty.className = 'text-muted';

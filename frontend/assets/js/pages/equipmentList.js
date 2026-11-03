@@ -23,6 +23,7 @@ const EquipmentList = {
     if (typeof LocationFields !== 'undefined') {
       await LocationFields.enhance({
         district: document.getElementById('equip-district-input'),
+        selectedDistrict: '',
         onChange: () => this.load(),
       });
     }
@@ -129,9 +130,22 @@ const EquipmentList = {
 
   card(item) {
     const card = document.createElement('article');
-    card.className = 'card';
-    card.style.padding = '20px';
-    card.style.marginBottom = '16px';
+    card.className = 'card listing-card';
+    const media = document.createElement('div');
+    media.className = 'listing-card-media';
+    const image = document.createElement('img');
+    image.src = typeof KaamdoImages !== 'undefined'
+      ? KaamdoImages.equipmentPhoto(item.photo_url)
+      : '../../assets/images/placeholders/tractor-default.jpg';
+    image.alt = item.title || '';
+    image.loading = 'lazy';
+    image.onerror = () => {
+      image.onerror = null;
+      image.src = '../../assets/images/placeholders/tractor-default.jpg';
+    };
+    media.appendChild(image);
+    const body = document.createElement('div');
+    body.className = 'listing-card-body';
     const title = document.createElement('h3');
     title.textContent = item.title;
     const place = document.createElement('p');
@@ -152,7 +166,8 @@ const EquipmentList = {
     link.className = 'btn btn-primary btn-sm';
     link.href = `equipment-details.html?id=${item.id}`;
     link.textContent = listText('list.viewListing');
-    card.append(title, place, rate, operator, copy, link);
+    body.append(title, place, rate, operator, copy, link);
+    card.append(media, body);
     return card;
   },
 };

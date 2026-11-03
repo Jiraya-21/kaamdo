@@ -148,19 +148,24 @@ class GuestDailyRequestStatusTests(APITestCase):
         self.assertEqual(accepted.status_code, 200)
         self.assertEqual(after.status_code, 200)
         self.assertEqual(after.data['status'], 'assigned')
-        self.assertEqual(
-            after.data['assigned_profile'],
-            {
-                'id': profile.pk,
-                'display_name': 'Ravi Kumar',
-                'skills': ['Wiring'],
-                'district': 'Mandya',
-                'locality': 'Town centre',
-            },
-        )
+        card = after.data['assigned_profile']
+        self.assertEqual(card['id'], profile.pk)
+        self.assertEqual(card['profile_id'], profile.pk)
+        self.assertEqual(card['display_name'], 'Ravi Kumar')
+        self.assertEqual(card['skills'], ['Wiring'])
+        self.assertEqual(card['district'], 'Mandya')
+        self.assertEqual(card['locality'], 'Town centre')
+        self.assertTrue(str(card['worker_id']).startswith('KD'))
+        self.assertTrue(card['identity_verified'])
+        self.assertFalse(card['skill_verified'])
+        self.assertFalse(card['qualification_verified'])
+        self.assertIsNone(card['rating_average'])
+        self.assertIsNone(card['review_count'])
+        self.assertEqual(after.data['worker_identity']['worker_id'], card['worker_id'])
         self.assertNotIn('9000001101', str(after.data))
         self.assertNotIn(self.email, str(after.data))
-        self.assertNotIn('latitude', after.data['assigned_profile'])
+        self.assertNotIn('latitude', card)
+        self.assertNotIn('phone_number', card)
 
     def test_inconsistent_assignment_does_not_reveal_a_worker(self):
         worker = User.objects.create_user(

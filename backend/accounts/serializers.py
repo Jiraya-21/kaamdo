@@ -54,9 +54,21 @@ class UserSerializer(serializers.ModelSerializer):
             return None
         from workers.models import ServiceProviderVerification, WorkerProfile
 
+        categories = []
+        profile_status = None
         try:
-            profile_status = obj.worker_profile.publication_status
-        except WorkerProfile.DoesNotExist:
+            profile = (
+                WorkerProfile.objects.filter(user=obj)
+                .prefetch_related('service_categories')
+                .first()
+            )
+            if profile is not None:
+                profile_status = profile.publication_status
+                categories = [
+                    {'id': row.pk, 'name': row.name, 'slug': row.slug}
+                    for row in profile.service_categories.all()
+                ]
+        except Exception:
             profile_status = None
         try:
             verification_status = obj.service_provider_verification.status
@@ -65,6 +77,8 @@ class UserSerializer(serializers.ModelSerializer):
         return {
             'profile_status': profile_status,
             'verification_status': verification_status,
+            'section': 'Daily services',
+            'categories': categories,
         }
 
     def get_test_payment(self, obj):
@@ -170,6 +184,14 @@ class LoginSerializer(serializers.Serializer):
 
 class EnableCapabilitySerializer(serializers.Serializer):
     capability = serializers.ChoiceField(choices=Capability.choices)
+
+    def validate_capability(self, value):
+        # Customer is marketplace access for every account, not a professional role to add.
+        if value == Capability.CUSTOMER:
+            raise serializers.ValidationError(
+                'Every signed-in account can request services. Choose a professional role instead.'
+            )
+        return value
 
 
 class ActiveModeSerializer(serializers.Serializer):

@@ -3,6 +3,8 @@ Permissions for equipment listings and rental requests.
 Each check reads a capability row. active_mode is not consulted.
 """
 
+from rest_framework.permissions import BasePermission
+
 from accounts.models import Capability
 from accounts.permissions import HasCapability
 
@@ -17,6 +19,11 @@ class IsEquipmentRenter(HasCapability):
     message = 'Only equipment renter accounts can request a rental.'
 
 
-class IsCustomer(HasCapability):
-    required_capability = Capability.CUSTOMER
-    message = 'Only customer accounts can send an equipment inquiry.'
+class IsCustomer(BasePermission):
+    """Any signed-in account may send an equipment inquiry. Customer is not a role gate."""
+
+    message = 'Sign in to send an equipment inquiry.'
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and user.is_authenticated)

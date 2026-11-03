@@ -29,7 +29,12 @@ assert.match(home, /pages\/jobs\/jobs-list\.html/);
 assert.match(home, /pages\/equipment\/equipment-list\.html/);
 assert.match(home, /pages\/jobs\/farm-jobs\.html/);
 assert.equal(home.includes('directory.html'), false);
-assert.match(home, /assets\/images\/placeholders\/hero-bg\.svg/);
+assert.match(home, /assets\/images\/placeholders\/hero-bg\.jpg/);
+assert.match(home, /assets\/images\/marketplace\/daily\.jpg/);
+assert.match(home, /assets\/images\/logo\.png/);
+assert.match(home, /home-track-bar/);
+assert.match(home, /track-request\.html\?guest=1/);
 assert.equal(home.includes('images.unsplash.com'), false);
+assert.match(navbar, /assets\/images\/logo\.png/);
 
 console.log('navigation tests passed');

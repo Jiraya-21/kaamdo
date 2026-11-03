@@ -5,7 +5,7 @@
 const ProviderStatusLogic = {
   PROFILE_PATH: '/workers/profile/',
   PHOTO_PATH: '/workers/profile/photo/',
-  DEFAULT_AVATAR: '../../assets/images/placeholders/avatar-default.svg',
+  DEFAULT_AVATAR: '../../assets/images/placeholders/avatar-default.jpg',
   MAX_BYTES: 2 * 1024 * 1024,
   ACCEPT_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
   TAB_IDS: ['profile', 'requests', 'offers'],

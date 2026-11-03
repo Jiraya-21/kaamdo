@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title.priceMenu">Price menu - KaamDo</title>
+  <link rel="icon" type="image/png" href="../../assets/images/favicon.png">
+  <link rel="stylesheet" href="../../assets/css/main.css?v=resp1">
+  <link rel="stylesheet" href="../../assets/css/components.css?v=resp1">
+  <link rel="stylesheet" href="../../assets/css/responsive.css?v=resp1">
+</head>
+<body>
+  <div id="navbar-container"></div>
+  <main id="app-content">
+    <div class="container page-shell" style="max-width: 920px;">
+      <h1 data-i18n="priceMenu.title">KaamDo price menu</h1>
+      <p class="page-lead" data-i18n="priceMenu.lead">
+        Fixed inspection fee first. Extra work uses this company menu. Workers carry the same list.
+      </p>
+      <ol id="price-menu-steps" class="price-menu-steps"></ol>
+      <h2 data-i18n="priceMenu.inspection">Inspection fee</h2>
+      <div id="price-menu-inspection" class="price-menu-grid"></div>
+      <h2 data-i18n="priceMenu.extras">Extra work (after inspection)</h2>
+      <div id="price-menu-extras" class="price-menu-grid"></div>
+      <p id="price-menu-notice" class="form-notice" role="status"></p>
+    </div>
+  </main>
+  <script src="../../assets/js/config.js?v=cfg1"></script>
+  <script src="../../assets/js/api/apiClient.js"></script>
+  <script src="../../assets/js/i18n/messages.js?v=pay1"></script>
+  <script src="../../assets/js/i18n/i18n.js?v=lang1"></script>
+  <script src="../../assets/js/components/navbar.js?v=real1"></script>
+  <script src="../../assets/js/pages/priceMenu.js?v=pay1"></script>
+</body>
+</html>

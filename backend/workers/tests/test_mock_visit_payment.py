@@ -101,16 +101,25 @@ class MockVisitPaymentTests(APITestCase):
         payment = VisitPayment.objects.get()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['detail'], 'TEST MODE — Payment skipped; no money collected.')
+        self.assertEqual(response.data['detail'], 'Inspection fee paid. Workers can be offered now.')
         self.assertEqual(response.data['test_mode'], True)
         self.assertEqual(response.data['money_received'], False)
-        self.assertEqual(response.data['status'], 'dispatch_pending')
+        # After fee, matching runs: with no nearby worker this becomes no_workers.
+        self.assertIn(response.data['status'], ('no_workers', 'offering', 'dispatch_pending'))
         self.assertEqual(response.data['payment_state'], 'mock_recorded')
         self.assertEqual(response.data['verification_source'], 'mock_demo')
         self.assertEqual(response.data['amount_inr'], '125.00')
+        self.assertEqual(response.data['next_step'], 'workers_offered')
         self.assertNotIn('guest-mock-pay@example.com', str(response.data))
         self.assertNotIn('gateway_verified', str(response.data))
-        self.assertEqual(self.daily_request.status, DailyServiceRequest.Status.DISPATCH_PENDING)
+        self.assertIn(
+            self.daily_request.status,
+            {
+                DailyServiceRequest.Status.NO_WORKERS,
+                DailyServiceRequest.Status.OFFERING,
+                DailyServiceRequest.Status.DISPATCH_PENDING,
+            },
+        )
         self.assertIsNone(self.daily_request.assigned_profile_id)
         self.assertEqual(payment.amount_inr, Decimal('125.00'))
         self.assertEqual(payment.state, VisitPayment.State.MOCK_RECORDED)
@@ -118,7 +127,7 @@ class MockVisitPaymentTests(APITestCase):
         self.assertIsNone(payment.verified_at)
         self.assertNotEqual(payment.state, VisitPayment.State.GATEWAY_VERIFIED)
         self.assertEqual(repeated.status_code, 200)
-        self.assertEqual(repeated.data['status'], 'dispatch_pending')
+        self.assertEqual(repeated.data['status'], response.data['status'])
         self.assertEqual(VisitPayment.objects.count(), 1)
 
     @MOCK_ON

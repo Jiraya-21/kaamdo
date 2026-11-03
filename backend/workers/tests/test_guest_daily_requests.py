@@ -61,11 +61,12 @@ class GuestDailyRequestApiTests(APITestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(
             set(response.data),
-            {'detail', 'reference', 'status', 'radius_km', 'access_key'},
+            {'detail', 'reference', 'status', 'radius_km', 'access_key', 'payment', 'next_step'},
         )
-        self.assertEqual(response.data['detail'], 'Daily service request created.')
+        self.assertIn('inspection fee', response.data['detail'].lower())
         self.assertEqual(response.data['reference'], record.pk)
-        self.assertEqual(response.data['status'], 'draft')
+        self.assertEqual(response.data['status'], 'awaiting_payment')
+        self.assertEqual(response.data['next_step'], 'pay_inspection_fee')
         self.assertEqual(response.data['radius_km'], 15)
         self.assertNotIn(self.email, str(response.data))
         self.assertNotIn('access_key_hash', response.data)
@@ -76,7 +77,8 @@ class GuestDailyRequestApiTests(APITestCase):
         self.assertEqual(record.contact_email, self.email)
         self.assertEqual(User.objects.count(), users_before)
         self.assertEqual(ServiceRequest.objects.count(), 0)
-        self.assertEqual(VisitPayment.objects.count(), 0)
+        self.assertEqual(VisitPayment.objects.count(), 1)
+        self.assertEqual(VisitPayment.objects.get().state, VisitPayment.State.PENDING)
         hidden = self.client.get(f'/api/v1/workers/daily-requests/{record.pk}/')
         listed = self.client.get('/api/v1/workers/daily-requests/')
         self.assertEqual(hidden.status_code, 404)
@@ -103,8 +105,8 @@ class GuestDailyRequestApiTests(APITestCase):
             self.payload(latitude='95'),
             self.payload(longitude='200'),
             self.payload(latitude='not-a-number'),
-            self.payload(radius_km=7),
-            self.payload(radius_km=51),
+            self.payload(radius_km=4),
+            self.payload(radius_km=101),
         ]
         for body in cases:
             response = self.client.post('/api/v1/workers/daily-requests/', body, format='json')
@@ -123,7 +125,7 @@ class GuestDailyRequestApiTests(APITestCase):
         defaulted.pop('radius_km')
         created = self.client.post('/api/v1/workers/daily-requests/', defaulted, format='json')
         self.assertEqual(created.status_code, 201)
-        self.assertEqual(created.data['radius_km'], 15)
+        self.assertEqual(created.data['radius_km'], 60)
         self.assertEqual(DailyServiceRequest.objects.get().latitude, Decimal('12.521800'))
 
     def test_verified_guest_can_create_a_request_with_mobile_instead_of_email(self):

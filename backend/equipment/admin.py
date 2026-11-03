@@ -9,10 +9,14 @@ from .models import EquipmentBooking, EquipmentInquiry, EquipmentListing, FeeSta
 
 @admin.register(EquipmentListing)
 class EquipmentListingAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'owner', 'district', 'pricing_basis', 'rate', 'fee_status', 'status')
+    list_display = ('id', 'title', 'owner', 'district', 'pricing_basis', 'rate', 'fee_status', 'status', 'has_photo')
     list_filter = ('status', 'fee_status', 'pricing_basis', 'operator_included', 'district')
     search_fields = ('title', 'district', 'locality')
     actions = ['mark_fee_paid', 'mark_fee_waived']
+
+    @admin.display(boolean=True, description='Photo')
+    def has_photo(self, obj):
+        return bool(obj.photo)
 
     @admin.action(description='Mark the listing fee paid')
     def mark_fee_paid(self, request, queryset):

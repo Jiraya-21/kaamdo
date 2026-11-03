@@ -23,6 +23,9 @@ const FarmHiring = {
     note.className = 'text-muted';
     note.textContent = this.text('farm.note');
     const title = this.input('farm-title', 'text', 120);
+    const state = document.createElement('select');
+    state.id = 'farm-state';
+    state.className = 'form-select';
     const district = document.createElement('select');
     district.id = 'farm-district';
     district.className = 'form-select';
@@ -30,6 +33,13 @@ const FarmHiring = {
     taluk.id = 'farm-taluk';
     taluk.className = 'form-select';
     const locality = this.input('farm-locality', 'text', 120);
+    const locate = document.createElement('button');
+    locate.type = 'button';
+    locate.className = 'btn btn-outline';
+    locate.textContent = this.text('guest.locate');
+    const locationStatus = document.createElement('p');
+    locationStatus.className = 'form-notice';
+    locationStatus.setAttribute('role', 'status');
     const headcount = this.input('farm-headcount', 'number');
     headcount.min = '1';
     headcount.max = '100';
@@ -73,9 +83,12 @@ const FarmHiring = {
     form.append(
       note,
       this.labeled(this.text('farm.title'), title),
+      this.labeled(this.text('form.state'), state),
       this.labeled(this.text('form.district'), district),
       this.labeled(this.text('form.taluk'), taluk),
       this.labeled(this.text('form.locality'), locality),
+      locate,
+      locationStatus,
       this.labeled(this.text('form.vacancies'), headcount),
       this.labeled(this.text('form.wageAmount'), wage),
       this.labeled(this.text('form.wagePeriod'), period),
@@ -88,7 +101,14 @@ const FarmHiring = {
       button,
     );
     if (typeof LocationFields !== 'undefined') {
-      LocationFields.enhance({ district, taluk, locality });
+      LocationFields.enhance({ state, district, taluk, locality });
+    }
+    if (typeof LocationDetect !== 'undefined') {
+      LocationDetect.bind({
+        button: locate,
+        status: locationStatus,
+        fields: { state, district, taluk, locality },
+      });
     }
     form.addEventListener('submit', (event) => this.submitPost(event, button, status));
     const editor = document.createElement('details');
