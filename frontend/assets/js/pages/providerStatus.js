@@ -171,15 +171,27 @@ const ProviderStatus = {
     file.accept = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
     file.className = 'visually-hidden';
     file.disabled = true;
-    file.disabled = true;
     file.id = `photo-file-${Math.random().toString(36).slice(2, 8)}`;
     const add = document.createElement('label');
-    add.className = 'btn btn-outline';
+    add.className = 'btn btn-outline btn-sm';
     add.setAttribute('for', file.id);
     add.textContent = this.text('photo.add');
+    figure.setAttribute('role', 'button');
+    figure.tabIndex = 0;
+    figure.title = this.text('photo.add');
+    figure.addEventListener('click', () => {
+      if (!file.disabled) file.click();
+    });
+    figure.addEventListener('keydown', (event) => {
+      if (file.disabled) return;
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        file.click();
+      }
+    });
     const remove = document.createElement('button');
     remove.type = 'button';
-    remove.className = 'btn btn-outline';
+    remove.className = 'photo-remove-link';
     remove.textContent = this.text('photo.remove');
     remove.hidden = true;
     const hint = document.createElement('p');

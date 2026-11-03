@@ -13,7 +13,7 @@ assert.deepEqual(logic.decisionPayload('accepted'), { status: 'accepted' });
 assert.deepEqual(logic.decisionPayload('seen'), { status: 'seen' });
 assert.deepEqual(logic.bookingActions({ status: 'requested' }), ['accepted', 'declined']);
 assert.deepEqual(logic.bookingActions({ status: 'accepted' }), []);
-assert.deepEqual(logic.inquiryActions({ status: 'new' }), ['seen', 'closed']);
+assert.deepEqual(logic.inquiryActions({ status: 'new' }), ['closed']);
 assert.deepEqual(logic.inquiryActions({ status: 'seen' }), ['closed']);
 assert.deepEqual(logic.inquiryActions({ status: 'closed' }), []);
 assert.match(logic.decisionResult({ id: 9, status: 'declined' }, 'booking').text, /does not collect money/i);

@@ -36,8 +36,8 @@ const EquipmentAccountLogic = {
 
   inquiryActions(inquiry) {
     if (!inquiry || inquiry.status === 'closed') return [];
-    if (inquiry.status === 'seen') return ['closed'];
-    return ['seen', 'closed'];
+    // One clear action for low-tech owners: close the inquiry.
+    return ['closed'];
   },
 
   decisionResult(data, kind) {

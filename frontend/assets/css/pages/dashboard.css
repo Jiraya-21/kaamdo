@@ -545,6 +545,7 @@ a.btn.is-disabled {
   overflow: hidden;
   border: 2px solid var(--border-color);
   background: var(--light-gray);
+  cursor: pointer;
 }
 
 .photo-preview img {
@@ -557,6 +558,22 @@ a.btn.is-disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
+}
+
+.photo-remove-link {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted, #666);
+  text-decoration: underline;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.photo-remove-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .workspace-tabs {

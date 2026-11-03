@@ -302,27 +302,32 @@ const GuestServicePage = {
     const phoneRadio = phoneLabel ? phoneLabel.querySelector('input') : null;
     const emailRadio = emailLabel ? emailLabel.querySelector('input') : null;
 
+    // Mobile-first: if phone OTP works, do not show email / method radios.
+    const phoneOnly = Boolean(this.options.phone);
+    const emailOnly = !phoneOnly && Boolean(this.options.email);
+
     if (blocked) {
       blocked.hidden = usable;
       blocked.textContent = usable ? '' : this.text('guest.verifyBlocked');
     }
     if (submit) submit.disabled = !usable || this.submitted;
-    if (methods) methods.hidden = !usable;
+    if (methods) methods.hidden = true;
     if (sendForm) sendForm.hidden = !usable;
     if (verifyForm) verifyForm.hidden = !usable;
-    if (phoneLabel) phoneLabel.hidden = !this.options.phone;
-    if (emailLabel) emailLabel.hidden = !this.options.email;
-    if (phoneRadio) phoneRadio.disabled = !this.options.phone;
-    if (emailRadio) emailRadio.disabled = !this.options.email;
-
-    const chosen = GuestServiceLogic.defaultMethod(this.options);
-    if (chosen === 'phone' && phoneRadio) phoneRadio.checked = true;
-    if (chosen === 'email' && emailRadio) emailRadio.checked = true;
+    if (phoneLabel) phoneLabel.hidden = !phoneOnly;
+    if (emailLabel) emailLabel.hidden = !emailOnly;
+    if (phoneRadio) {
+      phoneRadio.disabled = !phoneOnly;
+      if (phoneOnly) phoneRadio.checked = true;
+    }
+    if (emailRadio) {
+      emailRadio.disabled = !emailOnly;
+      if (emailOnly) emailRadio.checked = true;
+    }
 
     if (modeNote) {
-      if (this.options.phone && !this.options.email) modeNote.textContent = this.text('guest.smsReady');
-      else if (this.options.email && !this.options.phone) modeNote.textContent = this.text('guest.devOnly');
-      else if (this.options.phone && this.options.email) modeNote.textContent = this.text('guest.smsOrDev');
+      if (phoneOnly) modeNote.textContent = this.text('guest.smsReady');
+      else if (emailOnly) modeNote.textContent = this.text('guest.devOnly');
       else modeNote.textContent = this.text('guest.noSms');
     }
     const sendButton = document.getElementById('guest-send-code');
