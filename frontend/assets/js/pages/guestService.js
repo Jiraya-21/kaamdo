@@ -425,9 +425,11 @@ const GuestServicePage = {
         this.show('verify-notice', this.text(result.key || 'guest.noCode'), 'error');
         return;
       }
-      if (result.practice && result.devCode) {
-        this.show('verify-notice', this.text('guest.devOnly'), 'info');
+      if (result.devCode) {
+        this.show('verify-notice', result.text, 'info');
         this.showDevCode(result.devCode);
+        const codeInput = document.getElementById('guest-code');
+        if (codeInput) codeInput.value = result.devCode;
       } else {
         this.show('verify-notice', result.text, 'info');
       }
@@ -630,7 +632,8 @@ const GuestServicePage = {
     const feeLine = document.getElementById('confirm-fee-line');
     const button = document.getElementById('confirm-pay-fee');
     const payment = result.payment || {};
-    const canPay = payment.can_pay_inspection === true && payment.mock_checkout === true;
+    const canPay = payment.can_pay_inspection === true
+      || (payment.mock_checkout === true && String(result.status || '') === 'awaiting_payment');
     const amount = payment.inspection_fee_inr || payment.payment_amount_inr || '99.00';
     if (feeLine) {
       feeLine.hidden = false;
@@ -638,29 +641,39 @@ const GuestServicePage = {
     }
     if (wrap) wrap.hidden = !canPay;
     if (!button) return;
-    button.onclick = () => {
-      if (typeof MockCheckout === 'undefined') return;
-      MockCheckout.open({
-        title: this.text('pay.razorpayTitle'),
-        amountInr: amount,
-        note: this.text('guest.payNextBody'),
-        onConfirm: async () => {
-          const data = await ApiClient.post(GuestServiceLogic.GUEST_MOCK_PAYMENT_PATH, {
-            reference: this.savedReference,
-            access_key: this.savedAccessKey,
-          });
-          if (!data || data.money_received) throw new Error(this.text('pay.skipFailed'));
-          document.getElementById('confirm-status').textContent = typeof I18n === 'undefined'
-            ? GuestServiceLogic.statusSentence(data.status || 'offering', '')
-            : I18n.statusText(data.status || 'offering', '');
-          this.show(
-            'confirm-notice',
-            data.detail || this.text('pay.skipped'),
-            'success',
-          );
-          if (wrap) wrap.hidden = true;
-        },
-      });
+    button.onclick = async () => {
+      const recordPayment = async () => {
+        const data = await ApiClient.post(GuestServiceLogic.GUEST_MOCK_PAYMENT_PATH, {
+          reference: this.savedReference,
+          access_key: this.savedAccessKey,
+        });
+        if (!data || data.money_received) throw new Error(this.text('pay.skipFailed'));
+        document.getElementById('confirm-status').textContent = typeof I18n === 'undefined'
+          ? GuestServiceLogic.statusSentence(data.status || 'offering', '')
+          : I18n.statusText(data.status || 'offering', '');
+        this.show(
+          'confirm-notice',
+          data.detail || this.text('pay.skipped'),
+          'success',
+        );
+        if (wrap) wrap.hidden = true;
+      };
+      if (typeof MockCheckout !== 'undefined') {
+        MockCheckout.open({
+          title: this.text('pay.razorpayTitle'),
+          amountInr: amount,
+          note: this.text('guest.payNextBody'),
+          onConfirm: recordPayment,
+        });
+        return;
+      }
+      button.disabled = true;
+      try {
+        await recordPayment();
+      } catch (error) {
+        this.show('confirm-notice', GuestServiceLogic.errorText(error) || this.text('pay.skipFailed'), 'error');
+        button.disabled = false;
+      }
     };
   },
 
