@@ -240,6 +240,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = os.getenv('STATIC_URL', 'static/')
 STATIC_ROOT = Path(os.getenv('STATIC_ROOT', str(BASE_DIR / 'staticfiles')))
+# Sibling frontend/ folder (HTML site served by config.frontend.FrontendView).
+FRONTEND_ROOT = Path(os.getenv('FRONTEND_ROOT', str(BASE_DIR.parent / 'frontend')))
 
 # Media files (worker profile photos). Django serves these only when DEBUG is True.
 # Production must serve MEDIA_ROOT at MEDIA_URL from the reverse proxy or object storage.
