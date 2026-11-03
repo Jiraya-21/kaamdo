@@ -82,8 +82,12 @@ def guest_otp_contact(data):
 
 
 def development_otp_enabled():
-    """True only for a local debug process that explicitly asked for development codes."""
-    return settings.DEBUG is True and getattr(settings, 'OTP_DELIVERY', 'unconfigured') == 'development'
+    """True when delivery is development and either DEBUG or hosted staging demo is on."""
+    if getattr(settings, 'OTP_DELIVERY', 'unconfigured') != 'development':
+        return False
+    if settings.DEBUG is True:
+        return True
+    return bool(getattr(settings, 'KAAMDO_STAGING_DEMO', False))
 
 
 def sms_otp_enabled():

@@ -94,14 +94,15 @@ def require_production_database(debug, engine, name_env, allow_sqlite=False):
         )
 
 
-def require_payments_unconfigured(debug, visit_payment):
-    """A public process cannot enable the mock visit-fee skip."""
-    if debug:
+def require_payments_unconfigured(debug, visit_payment, staging_demo=False):
+    """A public process cannot enable the mock visit-fee skip unless staging demo is on."""
+    if debug or staging_demo:
         return
     value = str(visit_payment or 'unconfigured').strip().lower()
     if value not in ('', 'unconfigured'):
         raise ImproperlyConfigured(
-            'KAAMDO_VISIT_PAYMENT must stay unconfigured when DEBUG=False.'
+            'KAAMDO_VISIT_PAYMENT must stay unconfigured when DEBUG=False '
+            '(set KAAMDO_STAGING_DEMO=true only for a hosted exhibition).'
         )
 
 
@@ -166,6 +167,7 @@ def apply_production_protections(settings_dict, env_values=None):
     require_payments_unconfigured(
         debug,
         settings_dict.get('KAAMDO_VISIT_PAYMENT'),
+        staging_demo=env_flag(env_values.get('KAAMDO_STAGING_DEMO')),
     )
     settings_dict.update(production_security_settings(
         debug,

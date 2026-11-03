@@ -68,6 +68,7 @@ class ProductionSecurityTests(SimpleTestCase):
     def test_payments_stay_unconfigured_when_debug_is_off(self):
         require_payments_unconfigured(True, 'mock_demo')
         require_payments_unconfigured(False, 'unconfigured')
+        require_payments_unconfigured(False, 'mock_demo', staging_demo=True)
         with self.assertRaises(ImproperlyConfigured):
             require_payments_unconfigured(False, 'mock_demo')
         with self.assertRaises(ImproperlyConfigured):

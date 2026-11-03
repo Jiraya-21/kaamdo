@@ -148,11 +148,16 @@ def mock_visit_payment_enabled():
 
 
 def test_visit_payment_enabled():
-    """Mock checkout. Off by default. Refuses when DEBUG is False. Not a real payment."""
-    if settings.DEBUG is not True:
-        return False
+    """Mock checkout. Off by default. Not a real payment.
+
+    Allowed when DEBUG is on, or when KAAMDO_STAGING_DEMO is on for a hosted exhibition.
+    """
     value = str(getattr(settings, 'KAAMDO_VISIT_PAYMENT', 'unconfigured') or '').strip().lower()
-    return value in TEST_VISIT_PAYMENT_VALUES
+    if value not in TEST_VISIT_PAYMENT_VALUES:
+        return False
+    if settings.DEBUG is True:
+        return True
+    return bool(getattr(settings, 'KAAMDO_STAGING_DEMO', False))
 
 
 def test_payment_public_payload():

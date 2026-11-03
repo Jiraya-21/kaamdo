@@ -257,20 +257,28 @@ class GuestOtpOptionsTests(APITestCase):
         self.assertEqual(response.data['phone'], {'available': False, 'mode': 'unavailable'})
         self.assert_no_secrets(response)
 
-    def test_development_offers_email_practice_and_not_mobile(self):
+    def test_development_offers_email_and_phone_practice(self):
         with override_settings(DEBUG=True, OTP_DELIVERY='development', SMSMOBILEAPI_API_KEY=''):
             response = self.options()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['email'], {'available': True, 'mode': 'development'})
-        self.assertEqual(response.data['phone'], {'available': False, 'mode': 'unavailable'})
+        self.assertEqual(response.data['phone'], {'available': True, 'mode': 'development'})
         self.assert_no_secrets(response)
 
-    @override_settings(DEBUG=False, OTP_DELIVERY='development')
+    @override_settings(DEBUG=False, OTP_DELIVERY='development', KAAMDO_STAGING_DEMO=False)
     def test_development_without_debug_is_unavailable(self):
         response = self.options()
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.data['email']['available'])
         self.assertFalse(response.data['phone']['available'])
+
+    @override_settings(DEBUG=False, OTP_DELIVERY='development', KAAMDO_STAGING_DEMO=True)
+    def test_staging_demo_offers_development_phone(self):
+        response = self.options()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['phone'], {'available': True, 'mode': 'development'})
+        self.assertEqual(response.data['email'], {'available': True, 'mode': 'development'})
+        self.assert_no_secrets(response)
 
     @override_settings(
         DEBUG=False,

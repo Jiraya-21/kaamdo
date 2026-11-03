@@ -160,7 +160,11 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 _csrf_trusted_env = os.getenv('CSRF_TRUSTED_ORIGINS')
 
-# A code is shown only when DEBUG is on and this is explicitly "development".
+# Hosted exhibition only. Lets development OTP + mock visit payment run with DEBUG=False.
+# Never enable this for a real public money launch. Real SMS/payments stay separate.
+KAAMDO_STAGING_DEMO = os.getenv('KAAMDO_STAGING_DEMO', '').strip().lower() in ('true', '1', 'yes')
+
+# A code is shown only when delivery is "development" and (DEBUG or KAAMDO_STAGING_DEMO).
 # SMSMobileAPI is used only when this is explicitly "smsmobileapi" and a server key is set.
 # The default refuses to create or display a code.
 OTP_DELIVERY = str(os.getenv('KAAMDO_OTP_DELIVERY', 'unconfigured') or 'unconfigured').strip().lower()
@@ -202,9 +206,9 @@ CACHES = cache_settings(
     debug=DEBUG,
 )
 
-# Staff test skip for Daily Services visit fee. Default refuses.
-# Allowed local values with DEBUG=True only: mock_demo or test_bypass.
-# Both record mock_recorded / mock_demo. Neither is money received. DEBUG=False refuses.
+# Staff/local mock visit fee. Default refuses.
+# Allowed with DEBUG=True, or with KAAMDO_STAGING_DEMO=true on a hosted exhibition.
+# Values: mock_demo or test_bypass. Neither is money received.
 KAAMDO_VISIT_PAYMENT = os.getenv('KAAMDO_VISIT_PAYMENT', 'unconfigured')
 
 # Daily Services matching. These are starting values, not proven optima.
@@ -288,4 +292,5 @@ apply_production_protections(globals(), {
     'DB_NAME': os.getenv('DB_NAME'),
     'KAAMDO_TRUST_X_FORWARDED_PROTO': os.getenv('KAAMDO_TRUST_X_FORWARDED_PROTO'),
     'KAAMDO_ALLOW_SQLITE': os.getenv('KAAMDO_ALLOW_SQLITE'),
+    'KAAMDO_STAGING_DEMO': os.getenv('KAAMDO_STAGING_DEMO'),
 })
