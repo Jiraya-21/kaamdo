@@ -110,6 +110,9 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        from django.core.management import call_command
+
+        call_command('seed_service_categories')
         password = options['password']
         users = {}
         for key, spec in SEED_ACCOUNTS.items():
