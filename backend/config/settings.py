@@ -26,12 +26,30 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-kaamdo-placeholder-key-for
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
+def _normalize_allowed_host(raw):
+    """Accept hostname only; strip scheme/quotes users often paste from the browser URL."""
+    host = str(raw or '').strip().strip('"').strip("'")
+    if not host:
+        return ''
+    if '://' in host:
+        host = host.split('://', 1)[1]
+    host = host.split('/', 1)[0].strip()
+    return host
+
+
 _allowed_hosts_env = os.getenv('ALLOWED_HOSTS')
 ALLOWED_HOSTS = [
-    host.strip()
-    for host in (_allowed_hosts_env or 'localhost,127.0.0.1').split(',')
-    if host.strip()
+    host
+    for host in (
+        _normalize_allowed_host(item)
+        for item in (_allowed_hosts_env or 'localhost,127.0.0.1').split(',')
+    )
+    if host
 ]
+# Render sets this automatically to the live hostname (e.g. kaamdo-kg5r.onrender.com).
+_render_host = _normalize_allowed_host(os.getenv('RENDER_EXTERNAL_HOSTNAME', ''))
+if _render_host and _render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_render_host)
 
 # Application definition
 INSTALLED_APPS = [
