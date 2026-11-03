@@ -31,9 +31,10 @@ def _bootstrap_render_database():
         call_command('seed_service_categories', verbosity=1)
         if _truthy('KAAMDO_SEED_DEMO') or _truthy('RENDER'):
             call_command('seed_first_area_demo', verbosity=1)
-    except Exception as exc:  # noqa: BLE001 - surface startup failures in Render logs
+    except Exception as exc:  # noqa: BLE001 - keep the web process up; fix DB via env/logs
+        # Do not crash gunicorn on a bad DB host — the site can still serve HTML while
+        # Render env is corrected. API routes will fail until migrate succeeds on a later boot.
         print(f'KaamDo Render bootstrap failed: {exc}', file=sys.stderr)
-        raise
 
 
 _bootstrap_render_database()
